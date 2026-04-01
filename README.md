@@ -38,3 +38,5 @@ Bairros: id, nome, geometria_mapa, preco_medio, score_seguranca, score_turismo.
 Missões: id, titulo, descricao, xp_reward, categoria.
 
 Users: nome, email, xp_total, conquistas.
+
+Supabase ==> https://supabase.com/dashboard/project/cxzwnafmfgpugwuunsyg
