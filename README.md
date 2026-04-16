@@ -151,33 +151,6 @@ assets/
 
 3. **Persistir preferências do quiz.** A tabela `quiz_preferences` existe — dá pra salvar os sliders a cada mudança (com debounce).
 
-## Deploy
-
-### Web (gratuito)
-
-```bash
-flutter build web
-# upload da pasta build/web para:
-# - Cloudflare Pages  (recomendado, grátis, CDN global)
-# - Vercel / Netlify / Firebase Hosting / GitHub Pages
-```
-
-### Android (APK direto ou Play Store)
-
-```bash
-flutter build apk --release
-# APK gerado em: build/app/outputs/flutter-apk/app-release.apk
-```
-
-Pra distribuir: Firebase App Distribution (grátis) ou Google Play (US$25 único).
-
-### iOS
-
-```bash
-flutter build ios --release
-```
-
-Exige Mac + Xcode + Apple Developer Program (US$99/ano).
 
 ## Troubleshooting
 
