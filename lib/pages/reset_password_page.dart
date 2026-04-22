@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../services/supabase_service.dart';
+import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
 
-class ResetPasswordPage extends StatefulWidget {
+class ResetPasswordPage extends ConsumerStatefulWidget {
   const ResetPasswordPage({super.key});
 
   @override
-  State<ResetPasswordPage> createState() => _ResetPasswordPageState();
+  ConsumerState<ResetPasswordPage> createState() => _ResetPasswordPageState();
 }
 
-class _ResetPasswordPageState extends State<ResetPasswordPage> {
+class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
   final _password = TextEditingController();
+  final _confirmPassword = TextEditingController();
   bool _loading = false;
 
   @override
   void dispose() {
     _password.dispose();
+    _confirmPassword.dispose();
     super.dispose();
   }
 
@@ -36,17 +38,25 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
   }
 
   Future<void> _reset() async {
-    if (_password.text.length < 6) {
-      _toast('A senha deve ter pelo menos 6 caracteres', error: true);
+    final password = _password.text;
+    final confirm = _confirmPassword.text;
+
+    if (password.length < 8) {
+      _toast('A senha deve ter pelo menos 8 caracteres', error: true);
       return;
     }
+    if (password != confirm) {
+      _toast('As senhas não coincidem', error: true);
+      return;
+    }
+
     setState(() => _loading = true);
     try {
-      await supabase.auth.updateUser(UserAttributes(password: _password.text));
+      await ref.read(authControllerProvider).updatePassword(password);
       _toast('Senha atualizada com sucesso!');
       if (mounted) context.go('/');
-    } on AuthException catch (e) {
-      _toast(e.message, error: true);
+    } catch (e) {
+      _toast(AuthController.friendlyError(e), error: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -89,6 +99,13 @@ class _ResetPasswordPageState extends State<ResetPasswordPage> {
                   AppTextField(
                     controller: _password,
                     hint: 'Nova senha',
+                    icon: LucideIcons.lock,
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 12),
+                  AppTextField(
+                    controller: _confirmPassword,
+                    hint: 'Confirmar nova senha',
                     icon: LucideIcons.lock,
                     obscureText: true,
                   ),

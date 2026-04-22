@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../services/supabase_service.dart';
+import '../providers/auth_provider.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
 
 enum AuthMode { login, signup, forgot }
 
-class AuthPage extends StatefulWidget {
+class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
 
   @override
-  State<AuthPage> createState() => _AuthPageState();
+  ConsumerState<AuthPage> createState() => _AuthPageState();
 }
 
-class _AuthPageState extends State<AuthPage> {
+class _AuthPageState extends ConsumerState<AuthPage> {
   AuthMode _mode = AuthMode.login;
   final _email = TextEditingController();
   final _password = TextEditingController();
   final _name = TextEditingController();
   bool _loading = false;
+
+  // Regex simples pra email — evita chamar o Supabase com entrada claramente inválida.
+  static final _emailRegex = RegExp(r'^[\w\.\-\+]+@[\w\-]+\.[\w\-\.]+$');
 
   @override
   void dispose() {
@@ -41,50 +44,79 @@ class _AuthPageState extends State<AuthPage> {
     );
   }
 
+  /// Valida os campos de login/cadastro. Retorna mensagem de erro ou null se ok.
+  String? _validateForm({required bool isSignup}) {
+    final email = _email.text.trim();
+    final password = _password.text;
+    final name = _name.text.trim();
+
+    if (email.isEmpty || password.isEmpty || (isSignup && name.isEmpty)) {
+      return 'Preencha todos os campos';
+    }
+    if (!_emailRegex.hasMatch(email)) {
+      return 'Informe um email válido';
+    }
+    if (isSignup) {
+      if (name.length < 2) {
+        return 'Informe seu nome completo';
+      }
+      if (password.length < 8) {
+        return 'A senha deve ter pelo menos 8 caracteres';
+      }
+    } else {
+      if (password.length < 6) {
+        return 'Senha muito curta';
+      }
+    }
+    return null;
+  }
+
   Future<void> _handleEmailAuth() async {
-    if (_email.text.isEmpty || _password.text.isEmpty) {
-      _toast('Preencha todos os campos', error: true);
+    final isSignup = _mode == AuthMode.signup;
+    final validationError = _validateForm(isSignup: isSignup);
+    if (validationError != null) {
+      _toast(validationError, error: true);
       return;
     }
+
     setState(() => _loading = true);
+    final auth = ref.read(authControllerProvider);
     try {
-      if (_mode == AuthMode.signup) {
-        await supabase.auth.signUp(
+      if (isSignup) {
+        await auth.signUp(
           email: _email.text,
           password: _password.text,
-          data: {'full_name': _name.text},
+          fullName: _name.text,
         );
-        _toast('Conta criada! Verifique seu email.');
+        _toast('Conta criada! Verifique seu email para confirmar.');
       } else {
-        await supabase.auth.signInWithPassword(
-          email: _email.text,
-          password: _password.text,
-        );
+        await auth.signIn(email: _email.text, password: _password.text);
         _toast('Login realizado!');
       }
-    } on AuthException catch (e) {
-      _toast(e.message, error: true);
-    } catch (_) {
-      _toast('Erro na autenticação', error: true);
+    } catch (e) {
+      _toast(AuthController.friendlyError(e), error: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _handleForgot() async {
-    if (_email.text.isEmpty) {
+    final email = _email.text.trim();
+    if (email.isEmpty) {
       _toast('Insira seu email', error: true);
       return;
     }
+    if (!_emailRegex.hasMatch(email)) {
+      _toast('Informe um email válido', error: true);
+      return;
+    }
+
     setState(() => _loading = true);
     try {
-      await supabase.auth.resetPasswordForEmail(
-        _email.text,
-        redirectTo: 'io.supabase.bairromatch://reset-password',
-      );
+      await ref.read(authControllerProvider).resetPassword(email);
       _toast('Email de recuperação enviado!');
-    } on AuthException catch (e) {
-      _toast(e.message, error: true);
+    } catch (e) {
+      _toast(AuthController.friendlyError(e), error: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -93,9 +125,9 @@ class _AuthPageState extends State<AuthPage> {
   Future<void> _handleGoogle() async {
     setState(() => _loading = true);
     try {
-      await supabase.auth.signInWithOAuth(OAuthProvider.google);
-    } catch (_) {
-      _toast('Erro ao entrar com Google', error: true);
+      await ref.read(authControllerProvider).signInWithGoogle();
+    } catch (e) {
+      _toast(AuthController.friendlyError(e), error: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
