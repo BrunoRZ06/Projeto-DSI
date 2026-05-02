@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'firebase_options.dart';
 import 'app.dart';
 
 Future<void> main() async {
@@ -41,8 +43,24 @@ Future<void> main() async {
     return;
   }
 
+  //Firebase
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e,s){
+    debugPrint('Falha ao inicializar Firebase: $e\n$s');
+    runApp(_StartupErrorApp(
+      message: 'Erro ao conectar ao Firebase. \n$e',
+    ));
+    return;
+  }
+  
+
   runApp(const ProviderScope(child: VibeCoralQuestApp()));
 }
+
+
 
 /// Tela mínima exibida quando falta configuração — evita crash silencioso
 /// e deixa claro pra quem está rodando o app o que precisa ajustar.
