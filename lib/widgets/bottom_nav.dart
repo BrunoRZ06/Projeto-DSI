@@ -15,7 +15,8 @@ class AppBottomNav extends StatelessWidget {
 
   static const _tabs = <(IconData, String)>[
     (LucideIcons.compass, 'Match'),
-    (LucideIcons.map, 'Explorar'),
+    (LucideIcons.wallet, 'Gastos'),
+    (LucideIcons.route, 'Roteiros'),
     (LucideIcons.trophy, 'Missões'),
     (LucideIcons.user, 'Perfil'),
   ];
