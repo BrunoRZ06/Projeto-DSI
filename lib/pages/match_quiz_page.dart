@@ -38,11 +38,7 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-<<<<<<< HEAD
       backgroundColor: error ? AppColors.destructive : AppColors.foreground,
-=======
-      backgroundColor: error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
       behavior: SnackBarBehavior.floating,
     ));
   }
@@ -106,11 +102,7 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-<<<<<<< HEAD
                 const Row(
-=======
-                Row(
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                   children: [
                     Icon(LucideIcons.sparkles, size: 16, color: AppColors.coral),
                     SizedBox(width: 6),
@@ -119,16 +111,11 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
                           color: AppColors.coral,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-<<<<<<< HEAD
-=======
-                          letterSpacing: 1.2,
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                         )),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
-<<<<<<< HEAD
                   'Encontre Sua\nVibe',
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.w800,
@@ -147,26 +134,6 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.foreground)),
-=======
-                  'Vibe',
-                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        height: 1.1,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Nos conte o que importa e vamos encontrar o bairro perfeito pra você.',
-                  style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                ),
-                const SizedBox(height: 32),
-                Text('Cidade de Destino',
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onSurface)),
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                 const SizedBox(height: 8),
                 AppTextField(
                   controller: _destination,
@@ -180,27 +147,11 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
                   if (i < _sliders.length - 1) const SizedBox(height: 28),
                 ],
                 const SizedBox(height: 40),
-<<<<<<< HEAD
                 ElevatedButton(
                   onPressed: _loading ? null : _find,
                   child: Text(_loading
                       ? 'Buscando...'
                       : 'Encontrar Meu Bairro Perfeito'),
-=======
-                ElevatedButton.icon(
-                  onPressed: _loading ? null : _find,
-                  icon: _loading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : Icon(LucideIcons.sparkles, size: 18),
-                  label: Text(_loading ? 'Buscando...' : 'Match'),
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                 ),
               ],
             ),
@@ -219,7 +170,6 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-<<<<<<< HEAD
                 style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -227,15 +177,6 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
             Text(_values[i].toStringAsFixed(0),
                 style: const TextStyle(
                     fontSize: 12, color: AppColors.mutedForeground)),
-=======
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface)),
-            Text(_values[i].toStringAsFixed(0),
-                style: TextStyle(
-                    fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
           ],
         ),
         const SizedBox(height: 8),
@@ -250,19 +191,11 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(left,
-<<<<<<< HEAD
                 style: const TextStyle(
                     fontSize: 11, color: AppColors.mutedForeground)),
             Text(right,
                 style: const TextStyle(
                     fontSize: 11, color: AppColors.mutedForeground)),
-=======
-                style: TextStyle(
-                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-            Text(right,
-                style: TextStyle(
-                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
           ],
         ),
       ],

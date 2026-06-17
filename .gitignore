@@ -6,10 +6,7 @@
 build/
 .pub-cache/
 .pub/
-<<<<<<< HEAD
 pubspec.lock
-=======
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
 
 # IDEs
 .idea/

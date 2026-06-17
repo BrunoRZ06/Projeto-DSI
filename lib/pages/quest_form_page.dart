@@ -93,11 +93,7 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-<<<<<<< HEAD
       backgroundColor: error ? AppColors.destructive : AppColors.foreground,
-=======
-      backgroundColor: error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
       behavior: SnackBarBehavior.floating,
     ));
   }
@@ -105,7 +101,6 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -113,30 +108,14 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
         leading: IconButton(
           icon: const Icon(LucideIcons.arrowLeft,
               color: AppColors.foreground, size: 20),
-=======
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(LucideIcons.arrowLeft,
-              color: Theme.of(context).colorScheme.onSurface, size: 20),
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           _isEdit ? 'Editar Quest' : 'Nova Quest',
-<<<<<<< HEAD
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: AppColors.foreground,
-=======
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurface,
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
           ),
         ),
       ),
@@ -221,17 +200,10 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(text,
-<<<<<<< HEAD
           style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: AppColors.foreground)),
-=======
-          style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface)),
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
     );
   }
 
@@ -249,11 +221,7 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
       inputFormatters: inputFormatters,
       validator: validator,
       maxLines: maxLines,
-<<<<<<< HEAD
       style: const TextStyle(fontSize: 15),
-=======
-      style: TextStyle(fontSize: 15),
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
       decoration: InputDecoration(hintText: hint),
     );
   }
@@ -281,20 +249,12 @@ class _IconPicker extends StatelessWidget {
               decoration: BoxDecoration(
                 color: selected == entry.key
                     ? AppColors.coral
-<<<<<<< HEAD
                     : AppColors.secondary,
-=======
-                    : Theme.of(context).colorScheme.surfaceContainerHighest,
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: selected == entry.key
                       ? AppColors.coral
-<<<<<<< HEAD
                       : AppColors.border,
-=======
-                      : Theme.of(context).colorScheme.outlineVariant,
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                 ),
               ),
               child: Icon(
@@ -302,11 +262,7 @@ class _IconPicker extends StatelessWidget {
                 size: 22,
                 color: selected == entry.key
                     ? Colors.white
-<<<<<<< HEAD
                     : AppColors.mutedForeground,
-=======
-                    : Theme.of(context).colorScheme.onSurfaceVariant,
->>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
               ),
             ),
           ),
