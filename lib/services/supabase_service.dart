@@ -1,8 +1,11 @@
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'dart:html' as platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:path/path.dart' as path;
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Serviço para gerenciar uploads de imagens no Supabase Storage
+/// 
+/// NOTA: Upload de fotos não funciona na web (kIsWeb = true)
 class SupabaseService {
   static SupabaseClient? _client;
   static const String _bucketName = 'quest-photos';
@@ -11,6 +14,12 @@ class SupabaseService {
   /// 
   /// Configure as credenciais no arquivo .env (veja .env.example)
   static Future<void> initialize() async {
+    // Supabase upload não funciona na web (sem acesso a dart:io)
+    if (kIsWeb) {
+      print('Supabase upload desabilitado na web');
+      return;
+    }
+
     try {
       // Verifica se já foi inicializado
       if (_client != null) {
@@ -64,6 +73,12 @@ class SupabaseService {
     required String filePath,
     required String userId,
   }) async {
+    // Upload não suportado na web
+    if (kIsWeb) {
+      print('Upload de fotos não disponível na versão web');
+      return null;
+    }
+
     try {
       final supabaseClient = client;
       if (supabaseClient == null) {
@@ -71,7 +86,8 @@ class SupabaseService {
         return null;
       }
 
-      final file = File(filePath);
+      // dart:io só está disponível em mobile/desktop
+      final file = platform.File(filePath);
       if (!file.existsSync()) {
         print('Arquivo não encontrado: $filePath');
         return null;
