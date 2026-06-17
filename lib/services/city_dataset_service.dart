@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'dart:math';
 
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/district_score.dart';
 
@@ -227,72 +226,26 @@ class CityDatasetService {
   }
 
   Future<List<_CityRecord>> _readRecords() async {
-    final content = await rootBundle.loadString('cities.csv');
-    final lines = const LineSplitter().convert(content);
-    if (lines.isEmpty) return const <_CityRecord>[];
-
-    final headers = _splitCsvLine(lines.first);
-    final index = <String, int>{};
-    for (var i = 0; i < headers.length; i++) {
-      index[headers[i].trim()] = i;
-    }
-
-    String field(List<String> values, String name) {
-      final idx = index[name];
-      if (idx == null || idx >= values.length) return '';
-      return values[idx].trim();
-    }
-
-    double number(List<String> values, String name) {
-      return double.tryParse(field(values, name)) ?? 0;
-    }
-
+    final snapshot = await FirebaseFirestore.instance.collection('districts').get();
+    
     final records = <_CityRecord>[];
-    for (final line in lines.skip(1)) {
-      if (line.trim().isEmpty) continue;
-      final values = _splitCsvLine(line);
+    for (final doc in snapshot.docs) {
+      final d = doc.data();
       records.add(_CityRecord(
-        city: field(values, 'city'),
-        district: field(values, 'district').isEmpty
-            ? 'Sem distrito'
-            : field(values, 'district'),
-        latitude: number(values, 'latitude'),
-        longitude: number(values, 'longitude'),
-        distanceCityCenter: number(values, 'distance_city_center'),
-        attractionIndex: number(values, 'attraction_index'),
-        restaurantIndex: number(values, 'restaurant_index'),
-        crimeIndex: number(values, 'crime_index'),
-        safetyIndex: number(values, 'safety_index'),
-        priceTotal: number(values, 'price_total'),
+        city: d['city'] as String? ?? '',
+        district: d['district'] as String? ?? '',
+        latitude: d['latitude'] as double? ?? 0.0,
+        longitude: d['longitude'] as double? ?? 0.0,
+        distanceCityCenter: d['distance_city_center'] as double? ?? 0.0,
+        attractionIndex: d['attraction_index'] as double? ?? 0.0,
+        restaurantIndex: d['restaurant_index'] as double? ?? 0.0,
+        crimeIndex: d['crime_index'] as double? ?? 0.0,
+        safetyIndex: d['safety_index'] as double? ?? 0.0,
+        priceTotal: d['price_total'] as double? ?? 0.0,
       ));
     }
 
     return records;
-  }
-
-  List<String> _splitCsvLine(String line) {
-    final values = <String>[];
-    final current = StringBuffer();
-    var inQuotes = false;
-
-    for (var i = 0; i < line.length; i++) {
-      final char = line[i];
-      if (char == '"') {
-        inQuotes = !inQuotes;
-        continue;
-      }
-
-      if (char == ',' && !inQuotes) {
-        values.add(current.toString());
-        current.clear();
-        continue;
-      }
-
-      current.write(char);
-    }
-
-    values.add(current.toString());
-    return values;
   }
 
   String _normalize(String value) {

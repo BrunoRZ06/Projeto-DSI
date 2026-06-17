@@ -93,7 +93,7 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: error ? AppColors.destructive : AppColors.foreground,
+      backgroundColor: error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
       behavior: SnackBarBehavior.floating,
     ));
   }
@@ -101,21 +101,21 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(LucideIcons.arrowLeft,
-              color: AppColors.foreground, size: 20),
+          icon: Icon(LucideIcons.arrowLeft,
+              color: Theme.of(context).colorScheme.onSurface, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
           _isEdit ? 'Editar Quest' : 'Nova Quest',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: AppColors.foreground,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
       ),
@@ -200,10 +200,10 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Text(text,
-          style: const TextStyle(
+          style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.foreground)),
+              color: Theme.of(context).colorScheme.onSurface)),
     );
   }
 
@@ -221,7 +221,7 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
       inputFormatters: inputFormatters,
       validator: validator,
       maxLines: maxLines,
-      style: const TextStyle(fontSize: 15),
+      style: TextStyle(fontSize: 15),
       decoration: InputDecoration(hintText: hint),
     );
   }
@@ -249,12 +249,12 @@ class _IconPicker extends StatelessWidget {
               decoration: BoxDecoration(
                 color: selected == entry.key
                     ? AppColors.coral
-                    : AppColors.secondary,
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: selected == entry.key
                       ? AppColors.coral
-                      : AppColors.border,
+                      : Theme.of(context).colorScheme.outlineVariant,
                 ),
               ),
               child: Icon(
@@ -262,7 +262,7 @@ class _IconPicker extends StatelessWidget {
                 size: 22,
                 color: selected == entry.key
                     ? Colors.white
-                    : AppColors.mutedForeground,
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ),
