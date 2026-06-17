@@ -59,7 +59,11 @@ class _PhotoGalleryDialogState extends State<PhotoGalleryDialog> {
               top: 8,
               right: 8,
               child: IconButton(
+<<<<<<< HEAD
                 icon: const Icon(LucideIcons.x, color: Colors.white, size: 28),
+=======
+                icon: Icon(LucideIcons.x, color: Colors.white, size: 28),
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
@@ -70,7 +74,11 @@ class _PhotoGalleryDialogState extends State<PhotoGalleryDialog> {
               child: Center(
                 child: Text(
                   '${_current + 1} / ${widget.photos.length}',
+<<<<<<< HEAD
                   style: const TextStyle(color: Colors.white, fontSize: 14),
+=======
+                  style: TextStyle(color: Colors.white, fontSize: 14),
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                 ),
               ),
             ),

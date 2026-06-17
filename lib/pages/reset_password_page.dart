@@ -31,7 +31,11 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
+<<<<<<< HEAD
         backgroundColor: error ? AppColors.destructive : AppColors.foreground,
+=======
+        backgroundColor: error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -76,6 +80,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                 children: [
                   InkWell(
                     onTap: () => context.go('/'),
+<<<<<<< HEAD
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -83,17 +88,34 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                         SizedBox(width: 4),
                         Text('Voltar',
                             style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+=======
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(LucideIcons.arrowLeft, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        SizedBox(width: 4),
+                        Text('Voltar',
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14)),
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text('Nova Senha',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+<<<<<<< HEAD
                           fontWeight: FontWeight.w800, color: AppColors.foreground)),
                   const SizedBox(height: 8),
                   const Text(
                     'Digite sua nova senha abaixo.',
                     style: TextStyle(fontSize: 15, color: AppColors.mutedForeground),
+=======
+                          fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Digite sua nova senha abaixo.',
+                    style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                   ),
                   const SizedBox(height: 32),
                   AppTextField(

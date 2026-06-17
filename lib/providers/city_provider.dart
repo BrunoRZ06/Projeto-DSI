@@ -7,9 +7,15 @@ import '../services/city_dataset_service.dart';
 class CityNotifier extends Notifier<CityLocation> {
   @override
   CityLocation build() => const CityLocation(
+<<<<<<< HEAD
         name: 'São Paulo',
         lat: -23.5505,
         lng: -46.6333,
+=======
+        name: 'Londres',
+        lat: 51.5074,
+        lng: -0.1278,
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
       );
 
   void setCity(CityLocation city) => state = city;

@@ -65,6 +65,7 @@ class FirestoreService {
       _itineraries.doc(id).update(data);
 
   Future<void> deleteItinerary(String id) => _itineraries.doc(id).delete();
+<<<<<<< HEAD
 
   // ── Controle de Gastos (Budget) ───────────────────────────────────────────
   // Nota: a lógica principal está em BudgetService (lib/services/budget_service.dart).
@@ -127,4 +128,6 @@ class FirestoreService {
 
   Future<void> deleteBudgetEntry(String id) =>
       _budgetEntries.doc(id).delete();
+=======
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
 }

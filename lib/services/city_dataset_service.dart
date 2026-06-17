@@ -1,7 +1,13 @@
+<<<<<<< HEAD
 import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/services.dart' show rootBundle;
+=======
+import 'dart:math';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
 
 import '../models/district_score.dart';
 
@@ -227,6 +233,7 @@ class CityDatasetService {
   }
 
   Future<List<_CityRecord>> _readRecords() async {
+<<<<<<< HEAD
     final content = await rootBundle.loadString('cities.csv');
     final lines = const LineSplitter().convert(content);
     if (lines.isEmpty) return const <_CityRecord>[];
@@ -264,12 +271,31 @@ class CityDatasetService {
         crimeIndex: number(values, 'crime_index'),
         safetyIndex: number(values, 'safety_index'),
         priceTotal: number(values, 'price_total'),
+=======
+    final snapshot = await FirebaseFirestore.instance.collection('districts').get();
+    
+    final records = <_CityRecord>[];
+    for (final doc in snapshot.docs) {
+      final d = doc.data();
+      records.add(_CityRecord(
+        city: d['city'] as String? ?? '',
+        district: d['district'] as String? ?? '',
+        latitude: d['latitude'] as double? ?? 0.0,
+        longitude: d['longitude'] as double? ?? 0.0,
+        distanceCityCenter: d['distance_city_center'] as double? ?? 0.0,
+        attractionIndex: d['attraction_index'] as double? ?? 0.0,
+        restaurantIndex: d['restaurant_index'] as double? ?? 0.0,
+        crimeIndex: d['crime_index'] as double? ?? 0.0,
+        safetyIndex: d['safety_index'] as double? ?? 0.0,
+        priceTotal: d['price_total'] as double? ?? 0.0,
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
       ));
     }
 
     return records;
   }
 
+<<<<<<< HEAD
   List<String> _splitCsvLine(String line) {
     final values = <String>[];
     final current = StringBuffer();
@@ -295,6 +321,8 @@ class CityDatasetService {
     return values;
   }
 
+=======
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
   String _normalize(String value) {
     var text = value.trim().toLowerCase();
     const replacements = {

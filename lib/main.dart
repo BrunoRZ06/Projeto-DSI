@@ -3,7 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
+<<<<<<< HEAD
 import 'package:cloud_firestore/cloud_firestore.dart';
+=======
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
 import 'firebase_options.dart';
 import 'app.dart';
 
@@ -20,6 +23,7 @@ Future<void> main() async {
     return;
   }
 
+<<<<<<< HEAD
 
   try {
     await FirebaseFirestore.instance
@@ -41,6 +45,8 @@ Future<void> main() async {
     debugPrint('⚠️ Firestore inacessível: $e');
   }
 
+=======
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
   runApp(const ProviderScope(child: VibeCoralQuestApp()));
 }
 
@@ -61,14 +67,22 @@ class _StartupErrorApp extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+<<<<<<< HEAD
                   const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+=======
+                  Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                   const SizedBox(height: 16),
                   const Text('Configuração necessária',
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 12),
                   Text(message,
                       textAlign: TextAlign.center,
+<<<<<<< HEAD
                       style: const TextStyle(fontSize: 14, color: Colors.black87)),
+=======
+                      style: TextStyle(fontSize: 14, color: Colors.black87)),
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
                 ],
               ),
             ),

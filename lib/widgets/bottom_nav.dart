@@ -15,7 +15,11 @@ class AppBottomNav extends StatelessWidget {
 
   static const _tabs = <(IconData, String)>[
     (LucideIcons.compass, 'Match'),
+<<<<<<< HEAD
     (LucideIcons.wallet, 'Gastos'),
+=======
+    (LucideIcons.map, 'Explorar'),
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
     (LucideIcons.route, 'Roteiros'),
     (LucideIcons.trophy, 'Missões'),
     (LucideIcons.user, 'Perfil'),
@@ -23,10 +27,22 @@ class AppBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< HEAD
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.surfaceElevated,
         border: Border(top: BorderSide(color: AppColors.border)),
+=======
+    final cs = Theme.of(context).colorScheme;
+    // Fundo e borda acompanham o tema: surface no dark (#1E1E1E), branco no light
+    final bgColor = cs.surface;
+    final borderColor = cs.outlineVariant;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border(top: BorderSide(color: borderColor)),
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
       ),
       child: SafeArea(
         top: false,
@@ -37,7 +53,12 @@ class AppBottomNav extends StatelessWidget {
             children: List.generate(_tabs.length, (i) {
               final (icon, label) = _tabs[i];
               final isActive = activeTab == i;
+<<<<<<< HEAD
               final color = isActive ? AppColors.coral : AppColors.mutedForeground;
+=======
+              // Ativo: coral; Inativo: onSurfaceVariant (#A1A1A1 dark / #7B8494 light)
+              final color = isActive ? AppColors.coral : cs.onSurfaceVariant;
+>>>>>>> 78c0e23dc4f45cec5271c4751c3ad63af3c1fd5a
               return InkWell(
                 onTap: () => onTabChange(i),
                 borderRadius: BorderRadius.circular(12),
