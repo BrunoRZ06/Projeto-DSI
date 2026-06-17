@@ -74,11 +74,6 @@ class AuthController {
     await user.updatePassword(newPassword);
   }
 
-  /// Login via OAuth do Google.
-  Future<UserCredential> signInWithGoogle() async {
-    return _authService.signInWithGoogle();
-  }
-
   Future<void> signOut() => _authService.signOut();
 
   /// Traduz mensagens do FirebaseAuth para português, para exibir ao usuário.

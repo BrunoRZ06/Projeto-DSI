@@ -158,18 +158,6 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     }
   }
 
-  Future<void> _handleGoogle() async {
-    setState(() => _loading = true);
-    try {
-      await ref.read(authControllerProvider).signInWithGoogle();
-      if (mounted) context.go('/');
-    } catch (e) {
-      _toast(AuthController.friendlyError(e), error: true);
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     if (_mode == AuthMode.forgot) return _buildForgot();
@@ -264,26 +252,6 @@ class _AuthPageState extends ConsumerState<AuthPage> {
                     style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 32),
-                  OutlinedButton.icon(
-                    onPressed: _loading ? null : _handleGoogle,
-                    icon: Icon(Icons.login, size: 18),
-                    label: Text('Entrar com Google'),
-                  ),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('ou com email',
-                            style: TextStyle(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.9),
-                                fontSize: 12)),
-                      ),
-                      Expanded(child: Divider(color: Theme.of(context).colorScheme.outlineVariant)),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
                   if (!isLogin) ...[
                     AppTextField(
                         controller: _name, hint: 'Seu nome', icon: LucideIcons.user),
