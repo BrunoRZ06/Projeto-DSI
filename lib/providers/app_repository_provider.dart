@@ -9,19 +9,7 @@ final appRepositoryProvider = Provider<AppRepository>((ref) {
 });
  
 
-class RepositoryVersionNotifier extends Notifier<int> {
-  @override
-  int build() => 0;
-
-  void increment() {
-    state++;
-  }
-}
-
-final repositoryVersionProvider =
-    NotifierProvider<RepositoryVersionNotifier, int>(
-  RepositoryVersionNotifier.new,
-);
+final repositoryVersionProvider = StateProvider<int>((ref) => 0);
 
 final appDataLoaderProvider = StreamProvider<User?>((ref) async* {
   final repo = ref.read(appRepositoryProvider);
@@ -34,7 +22,7 @@ final appDataLoaderProvider = StreamProvider<User?>((ref) async* {
     }
  
     // Notifica todos os widgets que observam o repositório.
-ref.read(repositoryVersionProvider.notifier).increment();
+    ref.read(repositoryVersionProvider.notifier).state++;
  
     yield user;
   }

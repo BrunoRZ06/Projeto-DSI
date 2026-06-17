@@ -14,7 +14,7 @@ import '../services/nominatim_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/photo_gallery.dart';
-import '../Lib/district_reviews_page.dart';
+import 'district_reviews_page.dart';
 
 const _photos = [
   'assets/images/neighborhood-1.jpg',
