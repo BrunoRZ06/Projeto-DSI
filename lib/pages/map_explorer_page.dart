@@ -10,6 +10,7 @@ import '../providers/review_provider.dart';
 import '../services/district_key.dart';
 import '../services/city_dataset_service.dart';
 import 'district_reviews_page.dart';
+import 'travel_budget_page.dart';
 import '../theme/app_theme.dart';
 import '../widgets/photo_gallery.dart';
 
@@ -502,6 +503,27 @@ class _MapExplorerPageState extends ConsumerState<MapExplorerPage> {
                                     SizedBox(width: 12),
                                     Expanded(child: _Stat('Cafés', '90+')),
                                   ],
+                                ),
+                                const SizedBox(height: 16),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    icon: Icon(LucideIcons.wallet, size: 18),
+                                    label: Text('Planejar Gastos'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.coral,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      Navigator.of(context).push(MaterialPageRoute(
+                                        builder: (_) => TravelBudgetPage(district: displayedDistrict),
+                                      ));
+                                    },
+                                  ),
                                 ),
                                 const SizedBox(height: 24),
                                 Row(
