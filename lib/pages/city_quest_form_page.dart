@@ -4,34 +4,40 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../models/user_quest.dart';
+import '../models/city_quest.dart';
+import '../models/user_quest.dart' show questIconOptions;
 import '../providers/auth_provider.dart';
 import '../providers/city_quest_provider.dart';
-import '../providers/user_quest_provider.dart';
 import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/quest_form_fields.dart';
 
-class QuestFormPage extends ConsumerStatefulWidget {
-  /// Se não nulo, modo edição; caso contrário, modo criação.
-  final UserQuest? existing;
+/// Formulário de criação/edição de uma missão curada da cidade ([CityQuest]).
+/// A missão é associada à cidade atual (global). Foto vai para o Supabase, o
+/// restante para o Firestore.
+class CityQuestFormPage extends ConsumerStatefulWidget {
+  /// Se não nulo, modo edição.
+  final CityQuest? existing;
 
-  const QuestFormPage({super.key, this.existing});
+  /// Nome da cidade à qual a missão pertence (cidade global atual).
+  final String cityName;
+
+  const CityQuestFormPage({super.key, this.existing, required this.cityName});
 
   @override
-  ConsumerState<QuestFormPage> createState() => _QuestFormPageState();
+  ConsumerState<CityQuestFormPage> createState() => _CityQuestFormPageState();
 }
 
-class _QuestFormPageState extends ConsumerState<QuestFormPage> {
+class _CityQuestFormPageState extends ConsumerState<CityQuestFormPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _title;
   late final TextEditingController _subtitle;
   late final TextEditingController _details;
   late final TextEditingController _xp;
+  late final TextEditingController _location;
   late String _selectedIcon;
   bool _saving = false;
 
-  // Campos para foto
   Uint8List? _selectedBytes;
   String? _selectedName;
   final _imagePicker = ImagePicker();
@@ -46,8 +52,9 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
     _title = TextEditingController(text: q?.title ?? '');
     _subtitle = TextEditingController(text: q?.subtitle ?? '');
     _details = TextEditingController(text: q?.details ?? '');
-    _xp = TextEditingController(text: q?.xp.toString() ?? '100');
-    _selectedIcon = q?.iconName ?? 'star';
+    _xp = TextEditingController(text: q?.xp.toString() ?? '300');
+    _location = TextEditingController(text: q?.locationHint ?? '');
+    _selectedIcon = q?.iconName ?? 'landmark';
     _existingPhotoUrl = q?.photoUrl;
   }
 
@@ -57,6 +64,7 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
     _subtitle.dispose();
     _details.dispose();
     _xp.dispose();
+    _location.dispose();
     super.dispose();
   }
 
@@ -68,7 +76,6 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
         maxHeight: 1920,
         imageQuality: 85,
       );
-
       if (image != null) {
         final bytes = await image.readAsBytes();
         setState(() {
@@ -93,16 +100,14 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final user = ref.read(currentUserProvider);
-    if (user == null) return;
-
-    // Cidade atual (global) à qual a missão será associada.
-    final currentCity = ref.read(currentCityNameProvider);
+    if (user == null) {
+      _toast('Faça login para gerenciar missões.', error: true);
+      return;
+    }
 
     setState(() => _saving = true);
     try {
-      final notifier = ref.read(userQuestsProvider.notifier);
-
-      // Faz upload da foto se houver uma nova selecionada
+      // Upload da foto se houver uma nova selecionada.
       String? photoUrl = _existingPhotoUrl;
       if (_selectedBytes != null) {
         photoUrl = await SupabaseService.uploadQuestPhoto(
@@ -110,7 +115,6 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
           fileName: _selectedName ?? 'foto.jpg',
           userId: user.uid,
         );
-
         if (photoUrl == null) {
           _toast('Erro ao fazer upload da foto', error: true);
           setState(() => _saving = false);
@@ -118,36 +122,33 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
         }
       }
 
-      if (_isEdit) {
-        await notifier.edit(widget.existing!.copyWith(
-          title: _title.text.trim(),
-          subtitle: _subtitle.text.trim(),
-          details: _details.text.trim(),
-          xp: int.tryParse(_xp.text) ?? 100,
-          iconName: _selectedIcon,
-          photoUrl: photoUrl,
-          // Associa à cidade atual caso a missão ainda não tenha cidade.
-          cityName: widget.existing!.cityName ?? currentCity,
-        ));
-        _toast('Quest atualizada!');
-      } else {
-        await notifier.add(UserQuest(
-          id: '',
-          userId: user.uid,
-          title: _title.text.trim(),
-          subtitle: _subtitle.text.trim(),
-          details: _details.text.trim(),
-          xp: int.tryParse(_xp.text) ?? 100,
-          iconName: _selectedIcon,
-          photoUrl: photoUrl,
-          cityName: currentCity,
-        ));
-        _toast('Quest criada!');
+      final controller = ref.read(cityQuestsControllerProvider.notifier);
+      final xp = int.tryParse(_xp.text) ?? 100;
+      final location = _location.text.trim();
+
+      final quest = CityQuest(
+        id: widget.existing?.id ?? '',
+        cityName: widget.cityName,
+        title: _title.text.trim(),
+        subtitle: _subtitle.text.trim(),
+        details: _details.text.trim(),
+        xp: xp,
+        iconName: _selectedIcon,
+        locationHint: location.isEmpty ? null : location,
+        photoUrl: photoUrl,
+      );
+
+      final ok = _isEdit ? await controller.edit(quest) : await controller.add(quest);
+      if (!ok) {
+        _toast('Não foi possível salvar a missão.', error: true);
+        setState(() => _saving = false);
+        return;
       }
 
+      _toast(_isEdit ? 'Missão atualizada!' : 'Missão criada!');
       if (mounted) Navigator.of(context).pop(true);
     } catch (_) {
-      _toast('Erro ao salvar quest', error: true);
+      _toast('Erro ao salvar missão', error: true);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -164,7 +165,6 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final currentCity = ref.watch(currentCityNameProvider);
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
@@ -176,7 +176,7 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          _isEdit ? 'Editar Quest' : 'Nova Quest',
+          _isEdit ? 'Editar Missão' : 'Nova Missão de ${widget.cityName}',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -194,28 +194,10 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (!_isEdit)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Row(
-                        children: [
-                          Icon(LucideIcons.mapPin, size: 14, color: AppColors.coral),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Missão para $currentCity',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.coral,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   QuestFieldLabel('Título *'),
                   QuestTextField(
                     controller: _title,
-                    hint: 'Ex: Fotografe uma feira livre',
+                    hint: 'Ex: Fotografe o Big Ben',
                     validator: (v) =>
                         (v == null || v.trim().isEmpty) ? 'Campo obrigatório' : null,
                   ),
@@ -229,14 +211,20 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
                   QuestFieldLabel('Descrição'),
                   QuestTextField(
                     controller: _details,
-                    hint: 'Detalhes e dicas para completar a quest...',
+                    hint: 'Detalhes e dicas para completar a missão...',
                     maxLines: 3,
+                  ),
+                  const SizedBox(height: 16),
+                  QuestFieldLabel('Localização (opcional)'),
+                  QuestTextField(
+                    controller: _location,
+                    hint: 'Ex: Big Ben, Westminster',
                   ),
                   const SizedBox(height: 16),
                   QuestFieldLabel('XP de recompensa'),
                   QuestTextField(
                     controller: _xp,
-                    hint: '100',
+                    hint: '300',
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (v) {
@@ -277,7 +265,7 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
                               child: CircularProgressIndicator(
                                   strokeWidth: 2, color: Colors.white),
                             )
-                          : Text(_isEdit ? 'Salvar Alterações' : 'Criar Quest'),
+                          : Text(_isEdit ? 'Salvar Alterações' : 'Criar Missão'),
                     ),
                   ),
                 ],

@@ -12,6 +12,7 @@ class CityQuest {
   final String? locationHint; // Dica de localização (ex: "Big Ben")
   final double? latitude;
   final double? longitude;
+  final String? photoUrl; // Foto da missão (armazenada no Supabase)
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -26,6 +27,7 @@ class CityQuest {
     this.locationHint,
     this.latitude,
     this.longitude,
+    this.photoUrl,
     this.createdAt,
     this.updatedAt,
   });
@@ -40,6 +42,7 @@ class CityQuest {
         'location_hint': locationHint,
         'latitude': latitude,
         'longitude': longitude,
+        'photo_url': photoUrl,
       };
 
   Map<String, dynamic> toMap() => toJson();
@@ -55,6 +58,7 @@ class CityQuest {
         locationHint: json['location_hint'] as String?,
         latitude: (json['latitude'] as num?)?.toDouble(),
         longitude: (json['longitude'] as num?)?.toDouble(),
+        photoUrl: json['photo_url'] as String?,
         createdAt: json['created_at'] is Timestamp
             ? (json['created_at'] as Timestamp).toDate()
             : json['created_at'] is String
@@ -79,6 +83,7 @@ class CityQuest {
     String? locationHint,
     double? latitude,
     double? longitude,
+    String? photoUrl,
   }) {
     return CityQuest(
       id: id,
@@ -91,6 +96,7 @@ class CityQuest {
       locationHint: locationHint ?? this.locationHint,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
+      photoUrl: photoUrl ?? this.photoUrl,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );

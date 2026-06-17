@@ -6,19 +6,27 @@ class CityQuestService {
   final CollectionReference _collection =
       FirebaseFirestore.instance.collection('city_quests');
 
-  /// Busca todas as quests de uma cidade específica
+  /// Busca todas as quests de uma cidade específica.
+  ///
+  /// Filtra só por `city_name` (sem `orderBy` no Firestore) para não exigir um
+  /// índice composto; a ordenação por data é feita no cliente.
   Future<List<CityQuest>> fetchByCity(String cityName) async {
     try {
-      final snapshot = await _collection
-          .where('city_name', isEqualTo: cityName)
-          .orderBy('created_at', descending: false)
-          .get();
+      final snapshot =
+          await _collection.where('city_name', isEqualTo: cityName).get();
 
-      return snapshot.docs.map((doc) {
+      final quests = snapshot.docs.map((doc) {
         final data = Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
         data['id'] = doc.id;
         return CityQuest.fromJson(data);
       }).toList();
+
+      quests.sort((a, b) {
+        final da = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final db = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return da.compareTo(db);
+      });
+      return quests;
     } catch (e) {
       print('Erro ao buscar quests da cidade $cityName: $e');
       return [];
