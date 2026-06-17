@@ -16,6 +16,9 @@ build/
 # Secrets
 .env
 
+# Backup files
+*.save
+
 # OS
 .DS_Store
 Thumbs.db
