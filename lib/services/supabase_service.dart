@@ -18,6 +18,15 @@ class SupabaseService {
         return;
       }
 
+      // Tenta obter instância existente primeiro
+      try {
+        _client = Supabase.instance.client;
+        print('Supabase já estava inicializado (instância existente)');
+        return;
+      } catch (_) {
+        // Instância não existe, precisa inicializar
+      }
+
       await Supabase.initialize(
         url: const String.fromEnvironment(
           'SUPABASE_URL',
@@ -56,7 +65,8 @@ class SupabaseService {
     required String userId,
   }) async {
     try {
-      if (client == null) {
+      final supabaseClient = client;
+      if (supabaseClient == null) {
         print('Supabase não disponível. Upload de foto não realizado.');
         return null;
       }
@@ -75,7 +85,7 @@ class SupabaseService {
 
       // Faz o upload
       final bytes = await file.readAsBytes();
-      await client!.storage.from(_bucketName).uploadBinary(
+      await supabaseClient.storage.from(_bucketName).uploadBinary(
             storagePath,
             bytes,
             fileOptions: FileOptions(
@@ -85,7 +95,7 @@ class SupabaseService {
           );
 
       // Retorna a URL pública
-      final publicUrl = client!.storage.from(_bucketName).getPublicUrl(storagePath);
+      final publicUrl = supabaseClient.storage.from(_bucketName).getPublicUrl(storagePath);
       return publicUrl;
     } catch (e) {
       print('Erro ao fazer upload da imagem: $e');
@@ -98,7 +108,8 @@ class SupabaseService {
   /// [photoUrl] - URL completa da foto retornada pelo upload
   static Future<bool> deleteQuestPhoto(String photoUrl) async {
     try {
-      if (client == null) {
+      final supabaseClient = client;
+      if (supabaseClient == null) {
         print('Supabase não disponível. Exclusão de foto não realizada.');
         return false;
       }
@@ -113,7 +124,7 @@ class SupabaseService {
       
       final filePath = pathSegments.sublist(bucketIndex + 1).join('/');
       
-      await client!.storage.from(_bucketName).remove([filePath]);
+      await supabaseClient.storage.from(_bucketName).remove([filePath]);
       return true;
     } catch (e) {
       print('Erro ao deletar foto: $e');

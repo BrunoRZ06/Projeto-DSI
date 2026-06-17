@@ -16,7 +16,12 @@ Future<void> main() async {
     );
     
     // Inicializa Supabase para armazenamento de imagens
-    await SupabaseService.initialize();
+    // Não bloqueia o app se falhar - upload de fotos ficará indisponível
+    try {
+      await SupabaseService.initialize();
+    } catch (e) {
+      debugPrint('Supabase não disponível: $e');
+    }
   } catch (e, s) {
     debugPrint('Falha ao inicializar serviços: $e\n$s');
     runApp(_StartupErrorApp(message: 'Erro ao conectar aos serviços.\n$e'));
