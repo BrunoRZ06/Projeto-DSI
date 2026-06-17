@@ -8,7 +8,7 @@ import '../models/district_score.dart';
 import '../providers/city_provider.dart';
 import '../providers/review_provider.dart';
 import '../services/district_key.dart';
-import '../services/nominatim_service.dart';
+import '../services/city_dataset_service.dart';
 import 'district_reviews_page.dart';
 import '../theme/app_theme.dart';
 import '../widgets/photo_gallery.dart';
@@ -29,9 +29,6 @@ class MapExplorerPage extends ConsumerStatefulWidget {
 
 class _MapExplorerPageState extends ConsumerState<MapExplorerPage> {
   final MapController _mapController = MapController();
-  final NominatimService _nominatimService = NominatimService();
-  final Map<String, Future<String>> _neighborhoodNameFutures =
-      <String, Future<String>>{};
   DistrictScore? _selectedDistrict;
   String? _lastCityCenterKey;
 
@@ -39,16 +36,10 @@ class _MapExplorerPageState extends ConsumerState<MapExplorerPage> {
     return '${district.latitude.toStringAsFixed(5)},${district.longitude.toStringAsFixed(5)}';
   }
 
+  // Os bairros do dataset curado já têm nomes próprios, então usamos o nome
+  // direto (sem geocodificação reversa).
   Future<String> _resolveDistrictName(DistrictScore district) {
-    final key = _districtCoordKey(district);
-    return _neighborhoodNameFutures.putIfAbsent(key, () async {
-      final name = await _nominatimService.reverseNeighborhoodName(
-        district.latitude,
-        district.longitude,
-      );
-      if (name != null && name.trim().isNotEmpty) return name;
-      return district.district;
-    });
+    return Future.value(district.district);
   }
 
   String _positionSuffix(DistrictScore district, LatLng center) {
@@ -299,6 +290,13 @@ class _MapExplorerPageState extends ConsumerState<MapExplorerPage> {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      color: Theme.of(context).colorScheme.surface,
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+                      child: const _PreferencesPanel(),
                     ),
                   ),
                   if (topThreeDistricts.isNotEmpty)
@@ -576,6 +574,130 @@ class _MapExplorerPageState extends ConsumerState<MapExplorerPage> {
           ),
         );
       },
+    );
+  }
+}
+
+/// Painel de ajuste das preferências (1–5) na própria aba Explorar. Ao mover
+/// um slider, atualiza [rankingPreferencesProvider] e o ranking de bairros
+/// re-ordena na hora — mostrando os que mais deram match.
+class _PreferencesPanel extends ConsumerStatefulWidget {
+  const _PreferencesPanel();
+
+  @override
+  ConsumerState<_PreferencesPanel> createState() => _PreferencesPanelState();
+}
+
+class _PreferencesPanelState extends ConsumerState<_PreferencesPanel> {
+  bool _expanded = true;
+
+  static const _sliders = <(String, String, String)>[
+    ('Orçamento', 'Mochileiro', 'Luxo'),
+    ('Pontos Turísticos', 'Perto', 'Longe'),
+    ('Segurança', 'Indiferente', 'Máxima'),
+  ];
+
+  double _toSlider(double pref) => (1 + pref / 25).clamp(1.0, 5.0);
+  double _toPref(double slider) => (slider - 1) * 25;
+
+  @override
+  Widget build(BuildContext context) {
+    final prefs = ref.watch(rankingPreferencesProvider);
+    final values = <double>[
+      _toSlider(prefs.budget),
+      _toSlider(prefs.tourismDistance),
+      _toSlider(prefs.safetyPriority),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Row(
+              children: [
+                Icon(LucideIcons.slidersHorizontal, size: 16, color: AppColors.coral),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Suas preferências',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                Icon(
+                  _expanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
+          ),
+          if (_expanded) ...[
+            const SizedBox(height: 4),
+            for (var i = 0; i < _sliders.length; i++)
+              _buildSlider(i, values[i]),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSlider(int i, double value) {
+    final (label, left, right) = _sliders[i];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface)),
+            Text(value.toStringAsFixed(0),
+                style: TextStyle(
+                    fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+        Slider(
+          value: value,
+          min: 1,
+          max: 5,
+          divisions: 4,
+          onChanged: (v) {
+            final current = ref.read(rankingPreferencesProvider);
+            final next = RankingPreferences(
+              budget: i == 0 ? _toPref(v) : current.budget,
+              tourismDistance: i == 1 ? _toPref(v) : current.tourismDistance,
+              safetyPriority: i == 2 ? _toPref(v) : current.safetyPriority,
+            );
+            ref.read(rankingPreferencesProvider.notifier).setPreferences(next);
+          },
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(left,
+                style: TextStyle(
+                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+            Text(right,
+                style: TextStyle(
+                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      ],
     );
   }
 }

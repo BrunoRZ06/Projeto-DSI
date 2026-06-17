@@ -40,17 +40,21 @@ final rankingPreferencesProvider = NotifierProvider<RankingPreferencesNotifier, 
   RankingPreferencesNotifier.new,
 );
 
-/// Provider que busca distritos por lat/lng da cidade selecionada
+/// Ranking de bairros da cidade atual segundo as preferências escolhidas.
+/// Usa o dataset curado (bairros famosos com notas 1–5) e cai no Firestore
+/// para cidades fora do dataset. Reage à cidade global e às preferências, então
+/// a aba Explorar mostra os bairros que mais deram match conforme os parâmetros.
 final districtRankingProvider =
     FutureProvider<List<DistrictScore>>((ref) async {
   final city = ref.watch(cityProvider);
   final preferences = ref.watch(rankingPreferencesProvider);
-  if (city.lat == 0 && city.lng == 0) {
+  if (city.lat == 0 && city.lng == 0 && city.name.trim().isEmpty) {
     return const <DistrictScore>[];
   }
-  return _cityDatasetService.rankDistrictsByLocation(
-    city.lat,
-    city.lng,
+  return _cityDatasetService.rankDistricts(
+    cityName: city.name,
+    latitude: city.lat,
+    longitude: city.lng,
     radiusKm: 25.0,
     preferences: preferences,
   );

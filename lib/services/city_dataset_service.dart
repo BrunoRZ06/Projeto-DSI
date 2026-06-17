@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/district_score.dart';
+import 'neighborhoods_dataset.dart';
 
 class RankingPreferences {
   final double budget;
@@ -63,6 +64,12 @@ class CityDatasetService {
     String cityName, {
     RankingPreferences preferences = RankingPreferences.balanced,
   }) async {
+    // Prioriza o dataset curado de bairros famosos quando a cidade existe nele.
+    final curated = _curatedForCity(cityName);
+    if (curated.isNotEmpty) {
+      return _rankCurated(curated, preferences: preferences);
+    }
+
     final records = await _loadRecords();
     final normalizedCity = _canonicalCityName(cityName);
 
@@ -74,6 +81,128 @@ class CityDatasetService {
     }).toList();
 
     return _rankFromRecords(filtered, preferences: preferences);
+  }
+
+  /// Ponto de entrada usado pela aba Explorar: tenta o dataset curado pela
+  /// cidade, depois por raio geográfico, e por fim cai no Firestore.
+  Future<List<DistrictScore>> rankDistricts({
+    required String cityName,
+    required double latitude,
+    required double longitude,
+    double radiusKm = 25.0,
+    RankingPreferences preferences = RankingPreferences.balanced,
+  }) async {
+    final curatedByName = _curatedForCity(cityName);
+    if (curatedByName.isNotEmpty) {
+      return _rankCurated(curatedByName, preferences: preferences);
+    }
+    final curatedByRadius = _curatedWithinRadius(latitude, longitude, radiusKm);
+    if (curatedByRadius.isNotEmpty) {
+      return _rankCurated(curatedByRadius, preferences: preferences);
+    }
+    return rankDistrictsByLocation(
+      latitude,
+      longitude,
+      radiusKm: radiusKm,
+      preferences: preferences,
+    );
+  }
+
+  // ─── Dataset curado ──────────────────────────────────────────────────────
+
+  List<Neighborhood> _curatedForCity(String cityName) {
+    final canonical = _canonicalCityName(cityName);
+    return kNeighborhoods
+        .where((n) => n.cityCanonical == canonical)
+        .toList(growable: false);
+  }
+
+  List<Neighborhood> _curatedWithinRadius(
+    double latitude,
+    double longitude,
+    double radiusKm,
+  ) {
+    return kNeighborhoods
+        .where((n) =>
+            _haversineKm(latitude, longitude, n.lat, n.lng) <= radiusKm)
+        .toList(growable: false);
+  }
+
+  double _haversineKm(double lat1, double lon1, double lat2, double lon2) {
+    const earthRadiusKm = 6371.0;
+    final dLat = (lat2 - lat1) * pi / 180;
+    final dLon = (lon2 - lon1) * pi / 180;
+    final a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(lat1 * pi / 180) *
+            cos(lat2 * pi / 180) *
+            sin(dLon / 2) *
+            sin(dLon / 2);
+    final c = 2 * asin(sqrt(a));
+    return earthRadiusKm * c;
+  }
+
+  /// Pontua e ordena os bairros curados a partir das preferências do usuário.
+  ///
+  /// As preferências chegam em 0–100 (slider 1–5 convertido):
+  /// - budget:          0 = mochileiro … 100 = luxo
+  /// - tourismDistance: 0 = perto dos pontos turísticos … 100 = longe
+  /// - safetyPriority:  0 = indiferente … 100 = prioridade máxima
+  ///
+  /// Cada parâmetro influencia claramente o resultado, então mudar um slider
+  /// muda visivelmente o bairro campeão.
+  List<DistrictScore> _rankCurated(
+    List<Neighborhood> hoods, {
+    required RankingPreferences preferences,
+  }) {
+    final bp = (preferences.budget / 100).clamp(0.0, 1.0);
+    final tp = (preferences.tourismDistance / 100).clamp(0.0, 1.0);
+    final sp = (preferences.safetyPriority / 100).clamp(0.0, 1.0);
+
+    // Orçamento e proximidade turística são alvos fortes; a segurança é uma
+    // prioridade cujo peso cresce com o slider. Os pesos são calibrados para
+    // que mover qualquer um dos três sliders consiga trocar o bairro campeão.
+    const wBudget = 1.4;
+    const wTourism = 1.2;
+    final wSafety = 0.2 + sp * 1.8; // 0.2 … 2.0
+    final weightSum = wBudget + wTourism + wSafety;
+
+    final ranked = <DistrictScore>[];
+    for (final n in hoods) {
+      final bn = (n.budget - 1) / 4.0; // 0 barato … 1 luxo
+      final cn = (n.tourism - 1) / 4.0; // 0 longe … 1 central/turístico
+      final sn = (n.safety - 1) / 4.0; // 0 … 1
+
+      final budgetFit = 1 - (bp - bn).abs();
+      final desiredProximity = 1 - tp; // perto(tp=0)→1 ; longe(tp=1)→0
+      final tourismFit = 1 - (desiredProximity - cn).abs();
+      final safetyFit = sn;
+
+      final overall01 =
+          (budgetFit * wBudget + tourismFit * wTourism + safetyFit * wSafety) /
+              weightSum;
+
+      ranked.add(DistrictScore(
+        city: n.cityDisplay,
+        district: n.name,
+        latitude: n.lat,
+        longitude: n.lng,
+        leisureScore: cn * 100,
+        safetyScore: sn * 100,
+        centerDistanceScore: cn * 100,
+        premiumPriceScore: bn * 100,
+        overallScore: (overall01.clamp(0.0, 1.0)) * 100,
+        distanceCityCenter: (1 - cn) * 18,
+        attractionIndex: cn * 100,
+        restaurantIndex: cn * 100,
+        crimeIndex: (1 - sn) * 100,
+        safetyIndex: sn * 100,
+        averagePrice: 25 + bn * 325,
+        sampleSize: 1,
+      ));
+    }
+
+    ranked.sort((a, b) => b.overallScore.compareTo(a.overallScore));
+    return ranked;
   }
 
   List<DistrictScore> _rankFromRecords(
@@ -299,6 +428,10 @@ class CityDatasetService {
       'genebra': 'geneva',
       'zurique': 'zurich',
       'lisboa': 'lisbon',
+      'viena': 'vienna',
+      'berlim': 'berlin',
+      'amsterda': 'amsterdam',
+      'amsterdao': 'amsterdam',
     };
     return aliases[normalized] ?? normalized;
   }
