@@ -4,7 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 class FirestoreService {
   final _db = FirebaseFirestore.instance;
 
-  String get _uid => FirebaseAuth.instance.currentUser!.uid;
+  String? get _uidOrNull => FirebaseAuth.instance.currentUser?.uid;
+  String get _uid {
+    final uid = _uidOrNull;
+    if (uid == null) throw Exception('Utilizador não autenticado');
+    return uid;
+  }
 
   Future<void> saveProfile(Map<String, dynamic> data) =>
       _db.collection('user_profiles').doc(_uid).set(data, SetOptions(merge: true));
@@ -17,8 +22,11 @@ class FirestoreService {
   Future<void> updateProfile(String userId, Map<String, dynamic> data) =>
       _db.collection('user_profiles').doc(userId).set(data, SetOptions(merge: true));
 
-  Stream<DocumentSnapshot> watchProfile() =>
-      _db.collection('user_profiles').doc(_uid).snapshots();
+  Stream<DocumentSnapshot> watchProfile() {
+    final uid = _uidOrNull;
+    if (uid == null) return const Stream.empty();
+    return _db.collection('user_profiles').doc(uid).snapshots();
+  }
 
   Future<void> completeQuest(String questId) =>
       _db.collection('quest_progress').doc(_uid).set({
@@ -26,10 +34,13 @@ class FirestoreService {
         'last_updated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-  Stream<List<String>> watchCompletedQuests() =>
-      _db.collection('quest_progress').doc(_uid).snapshots().map(
-            (doc) => List<String>.from(doc.data()?['completed'] ?? []),
-          );
+  Stream<List<String>> watchCompletedQuests() {
+    final uid = _uidOrNull;
+    if (uid == null) return const Stream.empty();
+    return _db.collection('quest_progress').doc(uid).snapshots().map(
+          (doc) => List<String>.from(doc.data()?['completed'] ?? []),
+        );
+  }
 
   Future<List<Map<String, dynamic>>> getCompletedQuests(String userId) async {
     final doc = await _db.collection('quest_progress').doc(userId).get();
