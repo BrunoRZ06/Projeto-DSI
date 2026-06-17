@@ -15,11 +15,11 @@ class SupabaseService {
       await Supabase.initialize(
         url: const String.fromEnvironment(
           'SUPABASE_URL',
-          defaultValue: 'https://your-project.supabase.co',
+          defaultValue: 'https://cxzwnafmfgpugwuunsyg.supabase.co',
         ),
         anonKey: const String.fromEnvironment(
           'SUPABASE_ANON_KEY',
-          defaultValue: 'your-anon-key',
+          defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN4enduYWZtZmdwdWd3dXVuc3lnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5OTg4MzIsImV4cCI6MjA5MDU3NDgzMn0.OWk0hObVHCj8bdbU7lnEGY9Xtey183I3pE1cG6yElmI',
         ),
       );
       _client = Supabase.instance.client;

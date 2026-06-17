@@ -4,8 +4,10 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../models/quest.dart';
 import '../models/user_quest.dart';
+import '../models/city_quest.dart';
 import '../providers/auth_provider.dart';
 import '../providers/user_quest_provider.dart';
+import '../providers/city_quest_provider.dart';
 import '../providers/firestore_provider.dart';
 import '../theme/app_theme.dart';
 import 'quest_form_page.dart';
@@ -148,8 +150,19 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
     final currentUser = ref.watch(currentUserProvider);
     final userQuestsAsync = ref.watch(userQuestsProvider);
     final userQuests = userQuestsAsync.asData?.value ?? <UserQuest>[];
+    
+    // Cidade selecionada e quests da cidade
+    final selectedCity = ref.watch(selectedCityProvider);
+    final cityQuestsAsync = selectedCity != null 
+        ? ref.watch(cityQuestsProvider(selectedCity))
+        : const AsyncValue.data(<CityQuest>[]);
+    final cityQuests = cityQuestsAsync.asData?.value ?? <CityQuest>[];
 
     final totalXpDefault = defaultQuests
+        .where((q) => completed.contains(q.id))
+        .fold<int>(0, (sum, q) => sum + q.xp);
+    
+    final totalXpCity = cityQuests
         .where((q) => completed.contains(q.id))
         .fold<int>(0, (sum, q) => sum + q.xp);
 
@@ -159,12 +172,13 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
 
     final allQuestIds = {
       for (final q in defaultQuests) q.id,
+      for (final q in cityQuests) q.id,
       for (final q in userQuests) q.id,
     };
 
-    final totalXp = totalXpDefault + totalXpUser;
+    final totalXp = totalXpDefault + totalXpCity + totalXpUser;
     final doneCount = completed.where(allQuestIds.contains).length;
-    final totalCount = defaultQuests.length + userQuests.length;
+    final totalCount = defaultQuests.length + cityQuests.length + userQuests.length;
 
     return SafeArea(
       child: Center(
@@ -203,6 +217,43 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                       total: totalCount,
                     ),
                     const SizedBox(height: 24),
+                    
+                    // Seletor de cidade
+                    _CitySelector(),
+                    const SizedBox(height: 24),
+                    
+                    // Quests da cidade selecionada
+                    if (selectedCity != null && cityQuests.isNotEmpty) ...[
+                      Text('Missões de $selectedCity',
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).colorScheme.onSurface)),
+                      const SizedBox(height: 12),
+                      for (var i = 0; i < cityQuests.length; i++) ...[
+                        _CityQuestCard(
+                          quest: cityQuests[i],
+                          isDone: completed.contains(cityQuests[i].id),
+                          isExpanded: _expandedId == 'city-${cityQuests[i].id}',
+                          onToggle: () => setState(() =>
+                              _expandedId = _expandedId == 'city-${cityQuests[i].id}'
+                                  ? null
+                                  : 'city-${cityQuests[i].id}'),
+                          onComplete: () {
+                            final q = cityQuests[i];
+                            ref.read(completeQuestProvider(q.id));
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text('+${q.xp} XP ganhos! 🎉'),
+                              behavior: SnackBarBehavior.floating,
+                            ));
+                          },
+                        ),
+                        if (i < cityQuests.length - 1)
+                          const SizedBox(height: 12),
+                      ],
+                      const SizedBox(height: 28),
+                    ],
+                    
                     Text('Missões do app',
                         style: TextStyle(
                             fontSize: 14,
@@ -726,6 +777,49 @@ class _UserQuestCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    if (quest.photoUrl != null) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          quest.photoUrl!,
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 200,
+                              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value: loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 200,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Icon(
+                                  LucideIcons.imageOff,
+                                  size: 32,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
                     if (quest.details.isNotEmpty)
                       Text(
                         quest.details,
@@ -789,6 +883,262 @@ class _UserQuestCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── City Selector ───────────────────────────────────────────────────────────
+
+class _CitySelector extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final citiesAsync = ref.watch(citiesWithQuestsProvider);
+    final selectedCity = ref.watch(selectedCityProvider);
+
+    return citiesAsync.when(
+      data: (cities) {
+        if (cities.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Escolha uma cidade',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 42,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: cities.length + 1,
+                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return FilterChip(
+                      label: Text('Todas'),
+                      selected: selectedCity == null,
+                      onSelected: (_) {
+                        ref.read(selectedCityProvider.notifier).clear();
+                      },
+                      selectedColor: AppColors.coral,
+                      checkmarkColor: Colors.white,
+                      labelStyle: TextStyle(
+                        color: selectedCity == null ? Colors.white : null,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    );
+                  }
+
+                  final city = cities[index - 1];
+                  return FilterChip(
+                    label: Text(city),
+                    selected: selectedCity == city,
+                    onSelected: (_) {
+                      ref.read(selectedCityProvider.notifier).setCity(city);
+                    },
+                    selectedColor: AppColors.coral,
+                    checkmarkColor: Colors.white,
+                    labelStyle: TextStyle(
+                      color: selectedCity == city ? Colors.white : null,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+}
+
+// ─── City Quest Card ─────────────────────────────────────────────────────────
+
+class _CityQuestCard extends StatelessWidget {
+  final CityQuest quest;
+  final bool isDone;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+  final VoidCallback onComplete;
+
+  const _CityQuestCard({
+    required this.quest,
+    required this.isDone,
+    required this.isExpanded,
+    required this.onToggle,
+    required this.onComplete,
+  });
+
+  IconData get _icon {
+    return questIconOptions[quest.iconName] ?? LucideIcons.star;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: isDone ? 0.6 : 1,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+        child: Column(
+          children: [
+            InkWell(
+              onTap: onToggle,
+              borderRadius: BorderRadius.circular(18),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isDone
+                            ? AppColors.success.withValues(alpha: 0.15)
+                            : AppColors.coralLight,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Icon(
+                        isDone ? LucideIcons.check : _icon,
+                        size: 20,
+                        color: isDone ? AppColors.success : AppColors.coralDark,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            quest.title,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              decoration: isDone ? TextDecoration.lineThrough : null,
+                              color: isDone
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  : Theme.of(context).colorScheme.onSurface,
+                            ),
+                          ),
+                          if (quest.subtitle.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              quest.subtitle,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.coralLight,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '+${quest.xp} XP',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.coralDark,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (isExpanded)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (quest.details.isNotEmpty)
+                      Text(
+                        quest.details,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.45,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    if (quest.locationHint != null) ...[
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.mapPin,
+                            size: 14,
+                            color: AppColors.coral,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            quest.locationHint!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.coral,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (quest.details.isNotEmpty || quest.locationHint != null)
+                      const SizedBox(height: 12),
+                    if (!isDone)
+                      ElevatedButton(
+                        onPressed: onComplete,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size.fromHeight(40),
+                        ),
+                        child: Text('Completar Missão'),
+                      )
+                    else
+                      Row(
+                        children: [
+                          Icon(LucideIcons.check, size: 16, color: AppColors.success),
+                          SizedBox(width: 8),
+                          Text(
+                            'Missão completada!',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.success,
+                            ),
+                          ),
+                        ],
+                      ),
                   ],
                 ),
               ),

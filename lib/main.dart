@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'app.dart';
+import 'services/supabase_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,9 +14,12 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    
+    // Inicializa Supabase para armazenamento de imagens
+    await SupabaseService.initialize();
   } catch (e, s) {
-    debugPrint('Falha ao inicializar Firebase: $e\n$s');
-    runApp(_StartupErrorApp(message: 'Erro ao conectar ao Firebase.\n$e'));
+    debugPrint('Falha ao inicializar serviços: $e\n$s');
+    runApp(_StartupErrorApp(message: 'Erro ao conectar aos serviços.\n$e'));
     return;
   }
 

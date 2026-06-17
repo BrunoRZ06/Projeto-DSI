@@ -63,6 +63,10 @@ class DistrictReview {
     };
   }
 
+  Map<String, dynamic> toJson() => toMap();
+
+  factory DistrictReview.fromJson(Map<String, dynamic> json) => DistrictReview.fromMap(json);
+
   static DateTime? _parseTimestamp(dynamic value) {
     if (value == null) return null;
     if (value is Timestamp) return value.toDate();

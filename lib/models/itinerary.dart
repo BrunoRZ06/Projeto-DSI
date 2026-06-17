@@ -91,6 +91,8 @@ class Place {
         'rating': rating,
       };
 
+  Map<String, dynamic> toJson() => toMap();
+
   factory Place.fromMap(Map<String, dynamic> map) => Place(
         id: map['id'] as String,
         name: map['name'] as String,
@@ -104,6 +106,8 @@ class Place {
         address: map['address'] as String?,
         rating: map['rating'] != null ? (map['rating'] as num).toDouble() : null,
       );
+
+  factory Place.fromJson(Map<String, dynamic> json) => Place.fromMap(json);
 }
 
 // ─── Roteiro ─────────────────────────────────────────────────────────────────
@@ -184,4 +188,8 @@ class Itinerary {
             ? (map['created_at'] as Timestamp).toDate()
             : null,
       );
+
+  factory Itinerary.fromJson(Map<String, dynamic> json) => Itinerary.fromMap(json);
+
+  Map<String, dynamic> toJson() => toMap();
 }

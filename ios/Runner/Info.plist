@@ -66,5 +66,12 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<!-- Permissões para image_picker -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Precisamos acessar sua galeria para você adicionar fotos às suas quests.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Precisamos acessar sua câmera para você tirar fotos para suas quests.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Precisamos acessar o microfone para gravar vídeos.</string>
 </dict>
 </plist>

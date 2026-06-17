@@ -17,4 +17,18 @@ class CityLocation {
     lng: -0.1,
     district: 'Distrito recomendado',
   );
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        'lat': lat,
+        'lng': lng,
+        'district': district,
+      };
+
+  factory CityLocation.fromJson(Map<String, dynamic> json) => CityLocation(
+        name: json['name'] as String,
+        lat: (json['lat'] as num).toDouble(),
+        lng: (json['lng'] as num).toDouble(),
+        district: json['district'] as String? ?? '',
+      );
 }
