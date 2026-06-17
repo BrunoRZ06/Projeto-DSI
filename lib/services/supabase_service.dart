@@ -12,6 +12,12 @@ class SupabaseService {
   /// Configure as credenciais no arquivo .env (veja .env.example)
   static Future<void> initialize() async {
     try {
+      // Verifica se já foi inicializado
+      if (_client != null) {
+        print('Supabase já inicializado');
+        return;
+      }
+
       await Supabase.initialize(
         url: const String.fromEnvironment(
           'SUPABASE_URL',
@@ -23,18 +29,20 @@ class SupabaseService {
         ),
       );
       _client = Supabase.instance.client;
+      print('Supabase inicializado com sucesso');
     } catch (e) {
       print('Erro ao inicializar Supabase: $e');
-      rethrow;
+      // Não relança o erro para evitar quebrar a aplicação
+      // O upload de fotos simplesmente não funcionará
     }
   }
 
   /// Retorna a instância do cliente Supabase
-  static SupabaseClient get client {
+  static SupabaseClient? get client {
     if (_client == null) {
-      throw Exception('Supabase não foi inicializado. Chame initialize() primeiro.');
+      print('Aviso: Supabase não foi inicializado corretamente.');
     }
-    return _client!;
+    return _client;
   }
 
   /// Faz upload de uma imagem para o bucket do Supabase
@@ -48,6 +56,11 @@ class SupabaseService {
     required String userId,
   }) async {
     try {
+      if (client == null) {
+        print('Supabase não disponível. Upload de foto não realizado.');
+        return null;
+      }
+
       final file = File(filePath);
       if (!file.existsSync()) {
         print('Arquivo não encontrado: $filePath');
@@ -62,7 +75,7 @@ class SupabaseService {
 
       // Faz o upload
       final bytes = await file.readAsBytes();
-      await client.storage.from(_bucketName).uploadBinary(
+      await client!.storage.from(_bucketName).uploadBinary(
             storagePath,
             bytes,
             fileOptions: FileOptions(
@@ -72,7 +85,7 @@ class SupabaseService {
           );
 
       // Retorna a URL pública
-      final publicUrl = client.storage.from(_bucketName).getPublicUrl(storagePath);
+      final publicUrl = client!.storage.from(_bucketName).getPublicUrl(storagePath);
       return publicUrl;
     } catch (e) {
       print('Erro ao fazer upload da imagem: $e');
@@ -85,6 +98,11 @@ class SupabaseService {
   /// [photoUrl] - URL completa da foto retornada pelo upload
   static Future<bool> deleteQuestPhoto(String photoUrl) async {
     try {
+      if (client == null) {
+        print('Supabase não disponível. Exclusão de foto não realizada.');
+        return false;
+      }
+
       // Extrai o caminho do arquivo da URL
       final uri = Uri.parse(photoUrl);
       final pathSegments = uri.pathSegments;
@@ -95,7 +113,7 @@ class SupabaseService {
       
       final filePath = pathSegments.sublist(bucketIndex + 1).join('/');
       
-      await client.storage.from(_bucketName).remove([filePath]);
+      await client!.storage.from(_bucketName).remove([filePath]);
       return true;
     } catch (e) {
       print('Erro ao deletar foto: $e');
