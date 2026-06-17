@@ -42,6 +42,13 @@
     For more details:
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
+  <script>
+    // Stub do Passkeys Web SDK. O passkeys_web (dependência transitiva do
+    // supabase_flutter) tenta inicializar PasskeyAuthenticator no startup e
+    // quebra no Safari/WebKit quando o bundle.js não está carregado. O app
+    // não usa passkeys, então fornecemos um no-op para evitar o crash.
+    window.PasskeyAuthenticator = window.PasskeyAuthenticator || { init: function () {} };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
