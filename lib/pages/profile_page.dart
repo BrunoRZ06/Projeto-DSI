@@ -136,9 +136,9 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                                 ),
                                 const SizedBox(width: 8),
                                 IconButton.filled(
-                                  onPressed: _saving
+                                  onPressed: _saving || user == null
                                       ? null
-                                      : () => _save(user!.uid),
+                                      : () => _save(user.uid),
                                   style: IconButton.styleFrom(
                                     backgroundColor: AppColors.coral,
                                     foregroundColor: Colors.white,

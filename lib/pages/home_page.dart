@@ -34,6 +34,12 @@ class HomePage extends ConsumerWidget {
       );
     }
 
+    // Evita construir abas que dependem de sessão antes do router concluir
+    // o redirecionamento para /auth.
+    if (authAsync.value == null) {
+      return const _LoadingScaffold();
+    }
+
     final activeTab = ref.watch(activeTabProvider);
 
     final pages = <Widget>[
