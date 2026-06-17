@@ -18,13 +18,13 @@ class NotFoundPage extends StatelessWidget {
                     fontWeight: FontWeight.w800,
                     color: AppColors.coral)),
             const SizedBox(height: 12),
-            const Text('Página não encontrada',
+            Text('Página não encontrada',
                 style: TextStyle(
-                    fontSize: 16, color: AppColors.mutedForeground)),
+                    fontSize: 16, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: () => context.go('/'),
-              child: const Text('Voltar para o início'),
+              child: Text('Voltar para o início'),
             ),
           ],
         ),

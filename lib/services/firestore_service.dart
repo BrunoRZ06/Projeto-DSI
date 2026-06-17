@@ -4,7 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 class FirestoreService {
   final _db = FirebaseFirestore.instance;
 
-  String get _uid => FirebaseAuth.instance.currentUser!.uid;
+  String? get _uidOrNull => FirebaseAuth.instance.currentUser?.uid;
+  String get _uid {
+    final uid = _uidOrNull;
+    if (uid == null) throw Exception('Utilizador não autenticado');
+    return uid;
+  }
 
   Future<void> saveProfile(Map<String, dynamic> data) =>
       _db.collection('user_profiles').doc(_uid).set(data, SetOptions(merge: true));
@@ -17,8 +22,11 @@ class FirestoreService {
   Future<void> updateProfile(String userId, Map<String, dynamic> data) =>
       _db.collection('user_profiles').doc(userId).set(data, SetOptions(merge: true));
 
-  Stream<DocumentSnapshot> watchProfile() =>
-      _db.collection('user_profiles').doc(_uid).snapshots();
+  Stream<DocumentSnapshot> watchProfile() {
+    final uid = _uidOrNull;
+    if (uid == null) return const Stream.empty();
+    return _db.collection('user_profiles').doc(uid).snapshots();
+  }
 
   Future<void> completeQuest(String questId) =>
       _db.collection('quest_progress').doc(_uid).set({
@@ -26,10 +34,13 @@ class FirestoreService {
         'last_updated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-  Stream<List<String>> watchCompletedQuests() =>
-      _db.collection('quest_progress').doc(_uid).snapshots().map(
-            (doc) => List<String>.from(doc.data()?['completed'] ?? []),
-          );
+  Stream<List<String>> watchCompletedQuests() {
+    final uid = _uidOrNull;
+    if (uid == null) return const Stream.empty();
+    return _db.collection('quest_progress').doc(uid).snapshots().map(
+          (doc) => List<String>.from(doc.data()?['completed'] ?? []),
+        );
+  }
 
   Future<List<Map<String, dynamic>>> getCompletedQuests(String userId) async {
     final doc = await _db.collection('quest_progress').doc(userId).get();
@@ -65,66 +76,4 @@ class FirestoreService {
       _itineraries.doc(id).update(data);
 
   Future<void> deleteItinerary(String id) => _itineraries.doc(id).delete();
-
-  // ── Controle de Gastos (Budget) ───────────────────────────────────────────
-  // Nota: a lógica principal está em BudgetService (lib/services/budget_service.dart).
-  // Estes métodos são atalhos para quem usar FirestoreService diretamente.
-
-  CollectionReference get _cityBudgets => _db.collection('city_budgets');
-  CollectionReference get _budgetEntries => _db.collection('budget_entries');
-
-  Stream<List<Map<String, dynamic>>> watchBudgets(String userId) {
-    return _cityBudgets
-        .where('user_id', isEqualTo: userId)
-        .orderBy('created_at', descending: true)
-        .snapshots()
-        .map((snap) => snap.docs.map((doc) {
-              final data =
-                  Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
-              data['id'] = doc.id;
-              return data;
-            }).toList());
-  }
-
-  Future<String> createBudget(Map<String, dynamic> data) async {
-    final ref = await _cityBudgets.add({
-      ...data,
-      'created_at': FieldValue.serverTimestamp(),
-    });
-    return ref.id;
-  }
-
-  Future<void> deleteBudget(String budgetId) async {
-    final entries = await _budgetEntries
-        .where('city_budget_id', isEqualTo: budgetId)
-        .get();
-    final batch = _db.batch();
-    for (final doc in entries.docs) {
-      batch.delete(doc.reference);
-    }
-    batch.delete(_cityBudgets.doc(budgetId));
-    await batch.commit();
-  }
-
-  Stream<List<Map<String, dynamic>>> watchEntries(String budgetId) {
-    return _budgetEntries
-        .where('city_budget_id', isEqualTo: budgetId)
-        .orderBy('date', descending: true)
-        .snapshots()
-        .map((snap) => snap.docs.map((doc) {
-              final data =
-                  Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
-              data['id'] = doc.id;
-              return data;
-            }).toList());
-  }
-
-  Future<void> addBudgetEntry(Map<String, dynamic> data) =>
-      _budgetEntries.add(data);
-
-  Future<void> updateBudgetEntry(String id, Map<String, dynamic> data) =>
-      _budgetEntries.doc(id).update(data);
-
-  Future<void> deleteBudgetEntry(String id) =>
-      _budgetEntries.doc(id).delete();
 }

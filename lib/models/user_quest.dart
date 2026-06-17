@@ -29,6 +29,8 @@ class UserQuest {
   final String details;
   final int xp;
   final String iconName;
+  final String? photoUrl;
+  final String? cityName; // Cidade associada à quest
   final DateTime? createdAt;
 
   const UserQuest({
@@ -39,6 +41,8 @@ class UserQuest {
     required this.details,
     required this.xp,
     required this.iconName,
+    this.photoUrl,
+    this.cityName,
     this.createdAt,
   });
 
@@ -53,6 +57,8 @@ class UserQuest {
       details: map['details'] as String? ?? '',
       xp: map['xp'] as int? ?? 100,
       iconName: map['icon_name'] as String? ?? 'star',
+      photoUrl: map['photo_url'] as String?,
+      cityName: map['city_name'] as String?,
       createdAt: map['created_at'] is Timestamp
           ? (map['created_at'] as Timestamp).toDate()
           : map['created_at'] is String
@@ -68,7 +74,13 @@ class UserQuest {
         'details': details,
         'xp': xp,
         'icon_name': iconName,
+        'photo_url': photoUrl,
+        'city_name': cityName,
       };
+
+  Map<String, dynamic> toJson() => toMap();
+
+  factory UserQuest.fromJson(Map<String, dynamic> json) => UserQuest.fromMap(json);
 
   UserQuest copyWith({
     String? title,
@@ -76,6 +88,8 @@ class UserQuest {
     String? details,
     int? xp,
     String? iconName,
+    String? photoUrl,
+    String? cityName,
     DateTime? createdAt,
   }) {
     return UserQuest(
@@ -86,6 +100,8 @@ class UserQuest {
       details: details ?? this.details,
       xp: xp ?? this.xp,
       iconName: iconName ?? this.iconName,
+      photoUrl: photoUrl ?? this.photoUrl,
+      cityName: cityName ?? this.cityName,
       createdAt: createdAt ?? this.createdAt,
     );
   }

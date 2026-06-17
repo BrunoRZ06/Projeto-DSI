@@ -38,7 +38,7 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: error ? AppColors.destructive : AppColors.foreground,
+      backgroundColor: error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
       behavior: SnackBarBehavior.floating,
     ));
   }
@@ -102,7 +102,7 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(LucideIcons.sparkles, size: 16, color: AppColors.coral),
                     SizedBox(width: 6),
@@ -111,29 +111,30 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
                           color: AppColors.coral,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
                         )),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Encontre Sua\nVibe',
+                  'Vibe',
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.w800,
                         height: 1.1,
-                        color: AppColors.foreground,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Nos conte o que importa e vamos encontrar o bairro perfeito pra você.',
-                  style: TextStyle(fontSize: 15, color: AppColors.mutedForeground),
+                  style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 32),
-                const Text('Cidade de Destino',
+                Text('Cidade de Destino',
                     style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppColors.foreground)),
+                        color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 8),
                 AppTextField(
                   controller: _destination,
@@ -147,11 +148,19 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
                   if (i < _sliders.length - 1) const SizedBox(height: 28),
                 ],
                 const SizedBox(height: 40),
-                ElevatedButton(
+                ElevatedButton.icon(
                   onPressed: _loading ? null : _find,
-                  child: Text(_loading
-                      ? 'Buscando...'
-                      : 'Encontrar Meu Bairro Perfeito'),
+                  icon: _loading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Icon(LucideIcons.sparkles, size: 18),
+                  label: Text(_loading ? 'Buscando...' : 'Match'),
                 ),
               ],
             ),
@@ -170,13 +179,13 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: AppColors.foreground)),
+                    color: Theme.of(context).colorScheme.onSurface)),
             Text(_values[i].toStringAsFixed(0),
-                style: const TextStyle(
-                    fontSize: 12, color: AppColors.mutedForeground)),
+                style: TextStyle(
+                    fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
         const SizedBox(height: 8),
@@ -191,11 +200,11 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(left,
-                style: const TextStyle(
-                    fontSize: 11, color: AppColors.mutedForeground)),
+                style: TextStyle(
+                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
             Text(right,
-                style: const TextStyle(
-                    fontSize: 11, color: AppColors.mutedForeground)),
+                style: TextStyle(
+                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       ],

@@ -6,7 +6,6 @@
 build/
 .pub-cache/
 .pub/
-pubspec.lock
 
 # IDEs
 .idea/
@@ -16,6 +15,9 @@ pubspec.lock
 
 # Secrets
 .env
+
+# Backup files
+*.save
 
 # OS
 .DS_Store

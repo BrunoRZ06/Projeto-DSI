@@ -1,37 +1,29 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class FavoriteCity {
-  final String id;
   final String cityName;
-  final String district;
   final DateTime createdAt;
- 
-  const FavoriteCity({
-    required this.id,
-    required this.cityName,
-    required this.district,
-    required this.createdAt,
-  });
- 
-  factory FavoriteCity.fromMap(String id, Map<String, dynamic> map) =>
-      FavoriteCity(
-        id: id,
+
+  FavoriteCity({required this.cityName, required this.createdAt});
+
+  factory FavoriteCity.fromMap(Map<String, dynamic> map) => FavoriteCity(
         cityName: map['city_name'] as String,
-        district: map['district'] as String? ?? '',
-        createdAt: map['created_at'] != null
-            ? (map['created_at'] as dynamic).toDate()
-            : DateTime.now(),
+        createdAt: DateTime.parse(map['created_at'] as String),
       );
- 
-  Map<String, dynamic> toMap() => {
+
+  factory FavoriteCity.fromJson(Map<String, dynamic> json) => FavoriteCity(
+        cityName: json['city_name'] as String,
+        createdAt: json['created_at'] is Timestamp
+            ? (json['created_at'] as Timestamp).toDate()
+            : json['created_at'] is String
+                ? DateTime.parse(json['created_at'] as String)
+                : DateTime.now(),
+      );
+
+  Map<String, dynamic> toJson() => {
         'city_name': cityName,
-        'district': district,
-        'created_at': createdAt.toIso8601String(),
+        'created_at': Timestamp.fromDate(createdAt),
       };
- 
-  /// Busca por nome — sem ir ao banco.
-  bool matchesQuery(String query) {
-    final q = query.toLowerCase();
-    return cityName.toLowerCase().contains(q) ||
-        district.toLowerCase().contains(q);
-  }
+
+  Map<String, dynamic> toMap() => toJson();
 }
- 

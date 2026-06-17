@@ -31,7 +31,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg),
-        backgroundColor: error ? AppColors.destructive : AppColors.foreground,
+        backgroundColor: error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -76,24 +76,24 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                 children: [
                   InkWell(
                     onTap: () => context.go('/'),
-                    child: const Row(
+                    child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(LucideIcons.arrowLeft, size: 16, color: AppColors.mutedForeground),
+                        Icon(LucideIcons.arrowLeft, size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
                         SizedBox(width: 4),
                         Text('Voltar',
-                            style: TextStyle(color: AppColors.mutedForeground, fontSize: 14)),
+                            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 14)),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
                   Text('Nova Senha',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800, color: AppColors.foreground)),
+                          fontWeight: FontWeight.w800, color: Theme.of(context).colorScheme.onSurface)),
                   const SizedBox(height: 8),
-                  const Text(
+                  Text(
                     'Digite sua nova senha abaixo.',
-                    style: TextStyle(fontSize: 15, color: AppColors.mutedForeground),
+                    style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: 32),
                   AppTextField(
