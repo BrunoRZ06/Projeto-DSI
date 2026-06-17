@@ -158,14 +158,11 @@ class BudgetPage extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ProviderScope(
-        parent: ProviderScope.containerOf(context),
-        child: _NewBudgetSheet(
-          userId: userId,
-          defaultCity: defaultCity,
-          defaultDistrict: defaultDistrict,
-        ),
-      ),
+      builder: (_) => _NewBudgetSheet(
+        userId: userId,
+      defaultCity: defaultCity,
+      defaultDistrict: defaultDistrict,
+    ),
     );
   }
 }
@@ -589,11 +586,9 @@ class _BudgetDetailPageState extends ConsumerState<BudgetDetailPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ProviderScope(
-        parent: ProviderScope.containerOf(context),
-        child: _EntryFormSheet(budgetId: widget.budget.id),
-      ),
-    );
+      builder: (_) =>  _EntryFormSheet(budgetId: widget.budget.id),
+      )
+    ;
   }
 
   Future<bool?> _confirmDelete(BuildContext context) => showDialog<bool>(
@@ -912,10 +907,10 @@ class _EntryTile extends ConsumerWidget {
           context: context,
           isScrollControlled: true,
           backgroundColor: Colors.transparent,
-          builder: (_) => ProviderScope(
-            parent: ProviderScope.containerOf(context),
-            child: _EntryFormSheet(budgetId: budgetId, existing: entry),
-          ),
+          builder: (_) => _EntryFormSheet(
+            budgetId: budgetId,
+            existing: entry,
+          )
         ),
         borderRadius: BorderRadius.circular(14),
         child: Container(
