@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Paleta do BairroMatch — modo claro (coral + Plus Jakarta Sans).
 class AppColors {
@@ -53,7 +52,7 @@ class AppColorsDark {
 class AppTheme {
   static ThemeData light() {
     final base = ThemeData.light(useMaterial3: true);
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme(base.textTheme)
+    final textTheme = base.textTheme
         .apply(bodyColor: AppColors.foreground, displayColor: AppColors.foreground);
 
     return base.copyWith(
@@ -131,7 +130,7 @@ class AppTheme {
 
   static ThemeData dark() {
     final base = ThemeData.dark(useMaterial3: true);
-    final textTheme = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+    final textTheme = base.textTheme.apply(
       bodyColor: AppColorsDark.foreground,
       displayColor: AppColorsDark.foreground,
     );

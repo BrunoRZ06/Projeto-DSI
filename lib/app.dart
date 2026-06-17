@@ -16,6 +16,8 @@ class VibeCoralQuestApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'BairroMatch',
       debugShowCheckedModeBanner: false,
+      locale: const Locale('pt', 'BR'),
+      supportedLocales: const [Locale('pt', 'BR')],
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
