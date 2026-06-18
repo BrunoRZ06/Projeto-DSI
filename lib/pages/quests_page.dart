@@ -8,6 +8,7 @@ import '../providers/auth_provider.dart';
 import '../providers/user_quest_provider.dart';
 import '../providers/city_quest_provider.dart';
 import '../providers/firestore_provider.dart';
+import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
 import 'quest_form_page.dart';
 import 'city_quest_form_page.dart';
@@ -62,6 +63,9 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
     if (confirmed != true) return;
     try {
       await ref.read(userQuestsProvider.notifier).remove(quest.id);
+      if (quest.photoUrl != null && quest.photoUrl!.isNotEmpty) {
+        await SupabaseService.deleteQuestPhoto(quest.photoUrl!);
+      }
       if (_expandedId == 'user-${quest.id}') {
         setState(() => _expandedId = null);
       }
@@ -97,6 +101,9 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
     if (confirmed != true) return;
     final ok = await ref.read(cityQuestsControllerProvider.notifier).remove(quest.id);
     if (ok) {
+      if (quest.photoUrl != null && quest.photoUrl!.isNotEmpty) {
+        await SupabaseService.deleteQuestPhoto(quest.photoUrl!);
+      }
       if (_expandedId == 'city-${quest.id}') {
         setState(() => _expandedId = null);
       }

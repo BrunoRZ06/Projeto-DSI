@@ -28,12 +28,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ],
     errorBuilder: (context, state) => const NotFoundPage(),
     redirect: (context, state) {
-      final isLoggedIn = ref.read(isAuthenticatedProvider);
+      final authState = ref.read(authStateProvider);
       final location = state.matchedLocation;
 
       // /reset-password é acessível em qualquer estado (o usuário chega
       // nela pelo link do email antes de ter sessão nova).
       if (location == '/reset-password') return null;
+
+      // Enquanto o Firebase ainda restaura a sessão (refresh da página), não
+      // redireciona — evita deslogar o usuário no reload. A HomePage mostra um
+      // loading até resolver.
+      if (authState.isLoading) return null;
+
+      final isLoggedIn = authState.asData?.value != null;
 
       // Sem sessão: manda pro login, exceto se já estiver lá.
       if (!isLoggedIn && location != '/auth') {

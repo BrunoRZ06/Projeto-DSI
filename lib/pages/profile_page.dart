@@ -14,6 +14,7 @@ import '../providers/theme_provider.dart';
 import '../providers/user_photos_provider.dart';
 import '../providers/user_quest_provider.dart';
 import '../services/neighborhoods_dataset.dart';
+import '../services/supabase_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/photo_gallery.dart';
@@ -102,6 +103,38 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     ref.read(activeTabProvider.notifier).setTab(3); // aba Missões
   }
 
+  /// Exclui uma foto: apaga o arquivo no Supabase, limpa a referência em
+  /// missões que a usem e atualiza a galeria.
+  Future<void> _deletePhoto(String url) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir foto?'),
+        content: const Text('Esta foto será removida permanentemente.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final ok = await SupabaseService.deleteQuestPhoto(url);
+    if (!ok) {
+      _toast('Não foi possível excluir a foto.', error: true);
+      return;
+    }
+    await ref.read(userQuestsProvider.notifier).clearPhotoByUrl(url);
+    ref.invalidate(userPhotosProvider);
+    _toast('Foto excluída.');
+  }
+
   /// Galeria com todas as fotos enviadas pelo usuário (missões + comunidade).
   Widget _buildPhotoGallery() {
     final photosAsync = ref.watch(userPhotosProvider);
@@ -138,25 +171,45 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
               scrollDirection: Axis.horizontal,
               itemCount: urls.length,
               separatorBuilder: (_, __) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => GestureDetector(
-                onTap: () =>
-                    PhotoGalleryDialog.show(context, photos: urls, initialIndex: i),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(14),
-                  child: Image.network(
-                    urls[i],
-                    width: 96,
-                    height: 96,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      width: 96,
-                      height: 96,
-                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                      child: Icon(LucideIcons.imageOff,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+              itemBuilder: (_, i) => Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => PhotoGalleryDialog.show(context,
+                        photos: urls, initialIndex: i),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.network(
+                        urls[i],
+                        width: 96,
+                        height: 96,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 96,
+                          height: 96,
+                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                          child: Icon(LucideIcons.imageOff,
+                              color: Theme.of(context).colorScheme.onSurfaceVariant),
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: GestureDetector(
+                      onTap: () => _deletePhoto(urls[i]),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(LucideIcons.trash2,
+                            size: 12, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

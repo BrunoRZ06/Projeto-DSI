@@ -759,6 +759,35 @@ class _CommunityGalleryState extends ConsumerState<_CommunityGallery> {
     }
   }
 
+  Future<void> _deletePhoto(String url) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir foto?'),
+        content: const Text('Esta foto será removida da galeria.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    final ok = await SupabaseService.deleteQuestPhoto(url);
+    if (ok) {
+      setState(() => _urls = _urls.where((u) => u != url).toList());
+      _toast('Foto excluída.');
+    } else {
+      _toast('Não foi possível excluir a foto.', error: true);
+    }
+  }
+
   void _toast(String msg, {bool error = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -820,18 +849,42 @@ class _CommunityGalleryState extends ConsumerState<_CommunityGallery> {
             itemBuilder: (_, i) {
               final src = display[i];
               final isNetwork = src.startsWith('http');
-              return GestureDetector(
-                onTap: () => PhotoGalleryDialog.show(context,
-                    photos: display, initialIndex: i),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: isNetwork
-                      ? Image.network(src,
-                          width: 112, height: 112, fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => _brokenThumb())
-                      : Image.asset(src,
-                          width: 112, height: 112, fit: BoxFit.cover),
-                ),
+              final canDelete = hasReal &&
+                  isNetwork &&
+                  ref.read(currentUserProvider) != null;
+              return Stack(
+                children: [
+                  GestureDetector(
+                    onTap: () => PhotoGalleryDialog.show(context,
+                        photos: display, initialIndex: i),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: isNetwork
+                          ? Image.network(src,
+                              width: 112, height: 112, fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => _brokenThumb())
+                          : Image.asset(src,
+                              width: 112, height: 112, fit: BoxFit.cover),
+                    ),
+                  ),
+                  if (canDelete)
+                    Positioned(
+                      top: 4,
+                      right: 4,
+                      child: GestureDetector(
+                        onTap: () => _deletePhoto(src),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.black54,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(LucideIcons.trash2,
+                              size: 14, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                ],
               );
             },
           ),

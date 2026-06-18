@@ -118,6 +118,13 @@ class _QuestFormPageState extends ConsumerState<QuestFormPage> {
         }
       }
 
+      // Se a foto foi removida ou substituída numa edição, apaga o arquivo
+      // antigo no Supabase para não ficar órfão na galeria.
+      final oldUrl = widget.existing?.photoUrl;
+      if (oldUrl != null && oldUrl != photoUrl) {
+        await SupabaseService.deleteQuestPhoto(oldUrl);
+      }
+
       if (_isEdit) {
         await notifier.edit(widget.existing!.copyWith(
           title: _title.text.trim(),

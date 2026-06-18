@@ -10,6 +10,8 @@ final userQuestsProvider = NotifierProvider<UserQuestNotifier, AsyncValue<List<U
 );
 
 class UserQuestNotifier extends Notifier<AsyncValue<List<UserQuest>>> {
+  String? _loadedUid;
+
   @override
   AsyncValue<List<UserQuest>> build() {
     // Initial empty state and start listening to auth changes
@@ -20,14 +22,15 @@ class UserQuestNotifier extends Notifier<AsyncValue<List<UserQuest>>> {
   void _init() {
     ref.listen<User?>(currentUserProvider, (previous, next) {
       if (next == null) {
+        _loadedUid = null;
         state = const AsyncValue.data(<UserQuest>[]);
         return;
       }
-
-      final prevUid = previous?.uid;
-      final nextUid = next.uid;
-      if (prevUid != nextUid) {
-        load(nextUid);
+      // Carrega sempre que o usuário logado for diferente do já carregado —
+      // robusto ao `fireImmediately` (que pode disparar com previous == next).
+      if (_loadedUid != next.uid) {
+        _loadedUid = next.uid;
+        load(next.uid);
       }
     }, fireImmediately: true);
   }
@@ -63,5 +66,33 @@ class UserQuestNotifier extends Notifier<AsyncValue<List<UserQuest>>> {
     state.whenData((list) {
       state = AsyncValue.data(list.where((q) => q.id != questId).toList());
     });
+  }
+
+  /// Remove a referência de foto ([url]) de qualquer missão que a use, para não
+  /// deixar links quebrados quando a foto é apagada na galeria.
+  Future<void> clearPhotoByUrl(String url) async {
+    final list = state.asData?.value ?? const <UserQuest>[];
+    final affected = list.where((q) => q.photoUrl == url).toList();
+    if (affected.isEmpty) return;
+
+    UserQuest cleared(UserQuest q) => UserQuest(
+          id: q.id,
+          userId: q.userId,
+          title: q.title,
+          subtitle: q.subtitle,
+          details: q.details,
+          xp: q.xp,
+          iconName: q.iconName,
+          photoUrl: null,
+          cityName: q.cityName,
+          createdAt: q.createdAt,
+        );
+
+    for (final q in affected) {
+      await questService.update(cleared(q));
+    }
+    state = AsyncValue.data([
+      for (final q in list) q.photoUrl == url ? cleared(q) : q,
+    ]);
   }
 }
