@@ -24,7 +24,10 @@ class ReviewService {
   }
 
   Stream<Map<String, dynamic>> watchStats(String districtKey) {
-    return _collection.where('district_key', isEqualTo: districtKey).snapshots().map((snap) {
+    return _collection
+        .where('district_key', isEqualTo: districtKey)
+        .snapshots()
+        .map((snap) {
       final count = snap.size;
       double average = 0.0;
       if (count > 0) {
@@ -39,7 +42,8 @@ class ReviewService {
   }
 
   Future<Map<String, dynamic>> fetchStats(String districtKey) async {
-    final snap = await _collection.where('district_key', isEqualTo: districtKey).get();
+    final snap =
+        await _collection.where('district_key', isEqualTo: districtKey).get();
     final count = snap.size;
     double average = 0.0;
     if (count > 0) {
@@ -52,7 +56,8 @@ class ReviewService {
     return {'average': average, 'count': count};
   }
 
-  Future<DistrictReview?> fetchUserReview(String districtKey, String userId) async {
+  Future<DistrictReview?> fetchUserReview(
+      String districtKey, String userId) async {
     final snap = await _collection
         .where('district_key', isEqualTo: districtKey)
         .where('user_id', isEqualTo: userId)
@@ -60,6 +65,18 @@ class ReviewService {
         .get();
     if (snap.docs.isEmpty) return null;
     return DistrictReview.fromDocument(snap.docs.first);
+  }
+
+  Stream<DistrictReview?> watchUserReview(String districtKey, String userId) {
+    return _collection
+        .where('district_key', isEqualTo: districtKey)
+        .where('user_id', isEqualTo: userId)
+        .limit(1)
+        .snapshots()
+        .map((snap) {
+      if (snap.docs.isEmpty) return null;
+      return DistrictReview.fromDocument(snap.docs.first);
+    });
   }
 
   Future<DistrictReview> createReview(DistrictReview review) async {

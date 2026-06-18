@@ -7,20 +7,25 @@ import 'auth_provider.dart';
 final reviewServiceProvider = Provider<ReviewService>((ref) => ReviewService());
 
 /// Stream com a lista de avaliações para um `districtKey`.
-final reviewsProvider = StreamProvider.family<List<DistrictReview>, String>((ref, districtKey) {
+final reviewsProvider =
+    StreamProvider.family<List<DistrictReview>, String>((ref, districtKey) {
   return ref.watch(reviewServiceProvider).watchReviews(districtKey);
 });
 
 /// Stream com estatísticas (média/contagem) para um `districtKey`.
-final reviewStatsProvider = StreamProvider.family<Map<String, dynamic>, String>((ref, districtKey) {
+final reviewStatsProvider =
+    StreamProvider.family<Map<String, dynamic>, String>((ref, districtKey) {
   return ref.watch(reviewServiceProvider).watchStats(districtKey);
 });
 
 /// Busca a avaliação do usuário atual (se existir) para o distrito.
-final userReviewProvider = FutureProvider.family<DistrictReview?, String>((ref, districtKey) async {
+final userReviewProvider =
+    StreamProvider.family<DistrictReview?, String>((ref, districtKey) {
   final user = ref.watch(currentUserProvider);
-  if (user == null) return null;
-  return ref.watch(reviewServiceProvider).fetchUserReview(districtKey, user.uid);
+  if (user == null) return const Stream.empty();
+  return ref
+      .watch(reviewServiceProvider)
+      .watchUserReview(districtKey, user.uid);
 });
 
 /// Controller com métodos de ação (create/update/delete).
