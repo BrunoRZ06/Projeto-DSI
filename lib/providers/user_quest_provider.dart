@@ -47,25 +47,22 @@ class UserQuestNotifier extends Notifier<AsyncValue<List<UserQuest>>> {
 
   Future<void> add(UserQuest quest) async {
     final created = await questService.create(quest);
-    state.whenData((list) {
-      state = AsyncValue.data([created, ...list]);
-    });
+    final list = state.asData?.value ?? const <UserQuest>[];
+    state = AsyncValue.data([created, ...list]);
   }
 
   Future<void> edit(UserQuest quest) async {
     await questService.update(quest);
-    state.whenData((list) {
-      state = AsyncValue.data([
-        for (final q in list) q.id == quest.id ? quest : q,
-      ]);
-    });
+    final list = state.asData?.value ?? const <UserQuest>[];
+    state = AsyncValue.data([
+      for (final q in list) q.id == quest.id ? quest : q,
+    ]);
   }
 
   Future<void> remove(String questId) async {
     await questService.delete(questId);
-    state.whenData((list) {
-      state = AsyncValue.data(list.where((q) => q.id != questId).toList());
-    });
+    final list = state.asData?.value ?? const <UserQuest>[];
+    state = AsyncValue.data(list.where((q) => q.id != questId).toList());
   }
 
   /// Remove a referência de foto ([url]) de qualquer missão que a use, para não
