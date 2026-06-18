@@ -4,6 +4,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../models/city_location.dart';
 import '../providers/city_provider.dart';
+import '../providers/match_history_provider.dart';
 import '../services/city_dataset_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
@@ -73,6 +74,14 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
       }
 
       final bestDistrict = rankedDistricts.first;
+      try {
+        await ref.read(matchHistoryProvider.notifier).saveMatch(
+              bestDistrict: bestDistrict,
+              preferences: preferences,
+            );
+      } catch (e) {
+        debugPrint('Erro ao salvar histórico de match: $e');
+      }
 
       final location = CityLocation(
         name: bestDistrict.city,
