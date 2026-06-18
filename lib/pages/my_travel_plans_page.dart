@@ -21,6 +21,7 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
   List<TravelPlan>? _plans;
   bool _loading = true;
   bool _openingPlan = false;
+  bool _deletingPlan = false;
   String? _error;
 
   @override
@@ -119,12 +120,55 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
     }
   }
 
+  Future<void> _deletePlan(TravelPlan plan) async {
+    if (_deletingPlan) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir Planejamento'),
+        content:
+            const Text('Tem certeza que deseja excluir este planejamento?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.destructive,
+            ),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deletingPlan = true);
+    try {
+      await _travelPlanService.deletePlan(plan.id!);
+      if (!mounted) return;
+      await _loadPlans();
+      _toast('Planejamento excluído com sucesso');
+    } catch (e) {
+      if (mounted) {
+        _toast('Erro ao excluir planejamento: $e', error: true);
+      }
+    } finally {
+      if (mounted) setState(() => _deletingPlan = false);
+    }
+  }
+
   void _toast(String msg, {bool error = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor:
-          error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
+      backgroundColor: error
+          ? AppColors.destructive
+          : Theme.of(context).colorScheme.inverseSurface,
       behavior: SnackBarBehavior.floating,
     ));
   }
@@ -155,11 +199,12 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
               ),
             ),
           ),
-          if (_openingPlan)
+          if (_openingPlan || _deletingPlan)
             Container(
               color: Colors.black.withValues(alpha: 0.15),
               child: const Center(
-                child: CircularProgressIndicator(color: AppColors.coral, strokeWidth: 2),
+                child: CircularProgressIndicator(
+                    color: AppColors.coral, strokeWidth: 2),
               ),
             ),
         ],
@@ -170,7 +215,8 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
   Widget _buildBody() {
     if (_loading) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.coral, strokeWidth: 2),
+        child:
+            CircularProgressIndicator(color: AppColors.coral, strokeWidth: 2),
       );
     }
 
@@ -181,7 +227,8 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(LucideIcons.circleAlert,
-                size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                size: 40,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Erro ao carregar planejamentos',
@@ -222,7 +269,8 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(LucideIcons.wallet,
-                size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                size: 40,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'Nenhum planejamento salvo',
@@ -254,11 +302,11 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
       itemBuilder: (_, index) {
         final plan = plans[index];
         return _TravelPlanListTile(
-          city: plan.city,
-          district: plan.district,
+          plan: plan,
           estimatedTotal: _formatCurrency(plan.estimatedTotal),
           createdAt: _formatDate(plan.createdAt),
-          onTap: _openingPlan ? null : () => _openPlan(plan),
+          onEdit: _openingPlan || _deletingPlan ? null : () => _openPlan(plan),
+          onDelete: _deletingPlan ? null : () => _deletePlan(plan),
         );
       },
     );
@@ -266,93 +314,110 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
 }
 
 class _TravelPlanListTile extends StatelessWidget {
-  final String city;
-  final String district;
+  final TravelPlan plan;
   final String estimatedTotal;
   final String createdAt;
-  final VoidCallback? onTap;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const _TravelPlanListTile({
-    required this.city,
-    required this.district,
+    required this.plan,
     required this.estimatedTotal,
     required this.createdAt,
-    this.onTap,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.coralLight,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(LucideIcons.wallet, size: 18, color: AppColors.coral),
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.coralLight,
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    city,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+            child: const Icon(LucideIcons.wallet,
+                size: 18, color: AppColors.coral),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  plan.city,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.onSurface,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    district,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  plan.district,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Criado em $createdAt',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Criado em $createdAt',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(
-              estimatedTotal,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: AppColors.coral,
-              ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            estimatedTotal,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: AppColors.coral,
             ),
-            const SizedBox(width: 4),
-            Icon(LucideIcons.chevronRight,
-                size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
-          ],
-        ),
+          ),
+          const SizedBox(width: 4),
+          PopupMenuButton<String>(
+            icon: Icon(LucideIcons.moreVertical,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            onSelected: (value) {
+              if (value == 'edit' && onEdit != null) {
+                onEdit!();
+              } else if (value == 'delete' && onDelete != null) {
+                onDelete!();
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Text('Editar'),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('Excluir'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
