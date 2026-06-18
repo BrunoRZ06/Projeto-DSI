@@ -3,13 +3,19 @@ import 'package:flutter/services.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../models/district_score.dart';
+import '../models/travel_plan.dart';
 import '../services/travel_plan_service.dart';
 import '../theme/app_theme.dart';
 
 class TravelBudgetPage extends StatefulWidget {
   final DistrictScore district;
+  final TravelPlan? existingPlan;
 
-  const TravelBudgetPage({super.key, required this.district});
+  const TravelBudgetPage({
+    super.key,
+    required this.district,
+    this.existingPlan,
+  });
 
   @override
   State<TravelBudgetPage> createState() => _TravelBudgetPageState();
@@ -26,17 +32,39 @@ class _TravelBudgetPageState extends State<TravelBudgetPage> {
 
   bool _saving = false;
 
+  bool get _isEdit => widget.existingPlan != null;
+
   DistrictScore get district => widget.district;
+
+  String _formatInputNumber(num value) {
+    if (value is int) return value.toString();
+    final asDouble = value.toDouble();
+    return asDouble == asDouble.roundToDouble()
+        ? asDouble.toInt().toString()
+        : asDouble.toString();
+  }
 
   @override
   void initState() {
     super.initState();
-    _daysCtrl = TextEditingController(text: '3');
-    _peopleCtrl = TextEditingController(text: '2');
-    _mealsPerDayCtrl = TextEditingController(text: '5');
-    _taxiKmCtrl = TextEditingController(text: '5');
+    final plan = widget.existingPlan;
+
+    _daysCtrl = TextEditingController(
+      text: plan != null ? plan.days.toString() : '3',
+    );
+    _peopleCtrl = TextEditingController(
+      text: plan != null ? plan.people.toString() : '2',
+    );
+    _mealsPerDayCtrl = TextEditingController(
+      text: plan != null ? plan.mealsPerDay.toString() : '5',
+    );
+    _taxiKmCtrl = TextEditingController(
+      text: plan != null ? _formatInputNumber(plan.taxiKmPerDay) : '5',
+    );
     _activitiesBudgetCtrl = TextEditingController(
-      text: (_calculateLeisureCost(district) * 5).toStringAsFixed(0),
+      text: plan != null
+          ? _formatInputNumber(plan.activitiesBudget)
+          : (_calculateLeisureCost(district) * 5).toStringAsFixed(0),
     );
 
     for (final ctrl in [
@@ -113,19 +141,45 @@ class _TravelBudgetPageState extends State<TravelBudgetPage> {
 
     setState(() => _saving = true);
     try {
-      await _travelPlanService.createPlan(
-        city: district.city,
-        district: district.district,
-        days: _days,
-        people: _people,
-        mealsPerDay: _mealsPerDay,
-        taxiKmPerDay: _taxiKmPerDay,
-        activitiesBudget: _activitiesBudget,
-        estimatedTotal: _tripTotal(district),
-      );
-      _toast('Planejamento salvo com sucesso!');
+      if (_isEdit) {
+        final planId = widget.existingPlan!.id;
+        if (planId == null || planId.isEmpty) {
+          throw Exception('Planejamento inválido');
+        }
+
+        await _travelPlanService.updatePlan(
+          planId: planId,
+          city: district.city,
+          district: district.district,
+          days: _days,
+          people: _people,
+          mealsPerDay: _mealsPerDay,
+          taxiKmPerDay: _taxiKmPerDay,
+          activitiesBudget: _activitiesBudget,
+          estimatedTotal: _tripTotal(district),
+        );
+        _toast('Planejamento atualizado com sucesso!');
+        if (mounted) Navigator.of(context).pop(true);
+      } else {
+        await _travelPlanService.createPlan(
+          city: district.city,
+          district: district.district,
+          days: _days,
+          people: _people,
+          mealsPerDay: _mealsPerDay,
+          taxiKmPerDay: _taxiKmPerDay,
+          activitiesBudget: _activitiesBudget,
+          estimatedTotal: _tripTotal(district),
+        );
+        _toast('Planejamento salvo com sucesso!');
+      }
     } catch (e) {
-      _toast('Erro ao salvar planejamento: $e', error: true);
+      _toast(
+        _isEdit
+            ? 'Erro ao atualizar planejamento: $e'
+            : 'Erro ao salvar planejamento: $e',
+        error: true,
+      );
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -293,7 +347,11 @@ class _TravelBudgetPageState extends State<TravelBudgetPage> {
                           ),
                         )
                       : const Icon(LucideIcons.save),
-                  label: Text(_saving ? 'Salvando...' : 'Salvar Planejamento'),
+                  label: Text(
+                    _saving
+                        ? (_isEdit ? 'Atualizando...' : 'Salvando...')
+                        : (_isEdit ? 'Atualizar Planejamento' : 'Salvar Planejamento'),
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
