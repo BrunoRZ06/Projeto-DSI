@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
@@ -67,6 +68,104 @@ class SupabaseService {
       print('Erro ao fazer upload da imagem: $e');
       return null;
     }
+  }
+
+  /// Faz upload de uma foto da comunidade, organizada por cidade/bairro:
+  /// `community/{cidade}/{bairro}/{uid}_{ts}.ext`. Retorna a URL pública.
+  static Future<String?> uploadCommunityPhoto({
+    required Uint8List bytes,
+    required String fileName,
+    required String city,
+    required String district,
+    required String userId,
+  }) async {
+    final ext = _extension(fileName);
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final objectPath =
+        'community/${_slug(city)}/${_slug(district)}/${userId}_$timestamp$ext';
+    return _uploadBytes(objectPath, bytes, ext);
+  }
+
+  /// Lista as URLs públicas das fotos da comunidade de um bairro (do Supabase).
+  static Future<List<String>> listCommunityPhotos(
+      String city, String district) {
+    return _listPublicUrls('community/${_slug(city)}/${_slug(district)}');
+  }
+
+  /// Lista as URLs públicas de todas as fotos enviadas por um usuário.
+  static Future<List<String>> listUserPhotos(String userId) {
+    return _listPublicUrls('users/$userId');
+  }
+
+  /// Faz upload genérico de bytes para [objectPath] e retorna a URL pública.
+  static Future<String?> _uploadBytes(
+      String objectPath, Uint8List bytes, String ext) async {
+    try {
+      final uri = Uri.parse('$_url/storage/v1/object/$_bucket/$objectPath');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $_anonKey',
+          'apikey': _anonKey,
+          'Content-Type': _contentType(ext),
+          'x-upsert': 'false',
+        },
+        body: bytes,
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return '$_url/storage/v1/object/public/$_bucket/$objectPath';
+      }
+      // ignore: avoid_print
+      print('Erro no upload (${response.statusCode}): ${response.body}');
+      return null;
+    } catch (e) {
+      // ignore: avoid_print
+      print('Erro ao fazer upload da imagem: $e');
+      return null;
+    }
+  }
+
+  /// Lista os arquivos sob [prefix] e devolve suas URLs públicas (mais recentes
+  /// primeiro). Requer policy de SELECT para o role anon no bucket.
+  static Future<List<String>> _listPublicUrls(String prefix) async {
+    try {
+      final folder = prefix.endsWith('/') ? prefix : '$prefix/';
+      final uri = Uri.parse('$_url/storage/v1/object/list/$_bucket');
+      final response = await http.post(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $_anonKey',
+          'apikey': _anonKey,
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'prefix': folder,
+          'limit': 100,
+          'sortBy': {'column': 'created_at', 'order': 'desc'},
+        }),
+      );
+      if (response.statusCode != 200) return const [];
+      final items = jsonDecode(response.body) as List<dynamic>;
+      final urls = <String>[];
+      for (final item in items) {
+        if (item is! Map) continue;
+        final name = item['name'] as String?;
+        // Pastas têm id nulo; pulamos.
+        if (name == null || item['id'] == null) continue;
+        urls.add('$_url/storage/v1/object/public/$_bucket/$folder$name');
+      }
+      return urls;
+    } catch (e) {
+      // ignore: avoid_print
+      print('Erro ao listar fotos: $e');
+      return const [];
+    }
+  }
+
+  static String _slug(String s) {
+    final base = s.trim().toLowerCase();
+    final replaced = base.replaceAll(RegExp(r'[^a-z0-9]+'), '-');
+    return replaced.replaceAll(RegExp(r'^-+|-+$'), '');
   }
 
   /// Deleta uma foto pelo seu URL público. Retorna true se removida.

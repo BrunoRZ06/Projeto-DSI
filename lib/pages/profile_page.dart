@@ -2,15 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
-import '../models/favorite_city.dart';
+import '../models/city_location.dart';
 import '../models/itinerary.dart';
+import '../models/user_quest.dart';
 import '../providers/auth_provider.dart';
 import '../providers/city_provider.dart';
+import '../providers/favorite_provider.dart';
 import '../providers/firestore_provider.dart';
 import '../providers/itinerary_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/user_photos_provider.dart';
+import '../providers/user_quest_provider.dart';
+import '../services/neighborhoods_dataset.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
+import '../widgets/photo_gallery.dart';
  
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -25,8 +31,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   bool _saving = false;
   bool _loaded = false;
  
-  List<FavoriteCity> _favCities = [];
-  int _questCount = 0;
   int _totalXp = 0;
  
   @override
@@ -50,7 +54,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
  
       // Quests completadas
       final quests = await service.getCompletedQuests(userId);
-      _questCount = quests.length;
       _totalXp = quests.fold<int>(
         0,
         (sum, q) => sum + ((q['xp_earned'] as int?) ?? 0),
@@ -87,12 +90,148 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     ));
   }
  
+  /// Abre a aba de missões já na cidade escolhida (define a cidade global).
+  void _openCityQuests(String city) {
+    final center = cityCenterFor(city);
+    final current = ref.read(cityProvider);
+    ref.read(cityProvider.notifier).setCity(CityLocation(
+          name: city,
+          lat: center?.lat ?? current.lat,
+          lng: center?.lng ?? current.lng,
+        ));
+    ref.read(activeTabProvider.notifier).setTab(3); // aba Missões
+  }
+
+  /// Galeria com todas as fotos enviadas pelo usuário (missões + comunidade).
+  Widget _buildPhotoGallery() {
+    final photosAsync = ref.watch(userPhotosProvider);
+    final urls = photosAsync.asData?.value ?? const <String>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Minhas Fotos',
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface)),
+        const SizedBox(height: 12),
+        if (urls.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(
+              'Você ainda não enviou fotos. Adicione fotos às suas missões ou à galeria da comunidade!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          )
+        else
+          SizedBox(
+            height: 96,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: urls.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => GestureDetector(
+                onTap: () =>
+                    PhotoGalleryDialog.show(context, photos: urls, initialIndex: i),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: Image.network(
+                    urls[i],
+                    width: 96,
+                    height: 96,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      width: 96,
+                      height: 96,
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: Icon(LucideIcons.imageOff,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Progresso das missões dividido por cidade. Cada mini card mostra
+  /// completas/total e leva para as missões daquela cidade ao ser tocado.
+  Widget _buildCityProgress() {
+    final completed =
+        ref.watch(completedQuestsProvider).asData?.value ?? const <String>[];
+    final quests =
+        ref.watch(userQuestsProvider).asData?.value ?? const <UserQuest>[];
+
+    // Agrupa as missões do usuário por cidade.
+    final byCity = <String, List<UserQuest>>{};
+    for (final q in quests) {
+      final city = (q.cityName == null || q.cityName!.trim().isEmpty)
+          ? 'Sem cidade'
+          : q.cityName!;
+      byCity.putIfAbsent(city, () => []).add(q);
+    }
+    final cities = byCity.keys.toList()..sort();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Progresso por Cidade',
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface)),
+        const SizedBox(height: 12),
+        if (cities.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Text(
+              'Crie missões em uma cidade para acompanhar seu progresso aqui.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          )
+        else
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              for (final city in cities)
+                _CityProgressCard(
+                  city: city == 'Sem cidade' ? 'Sem cidade' : city,
+                  done: byCity[city]!.where((q) => completed.contains(q.id)).length,
+                  total: byCity[city]!.length,
+                  onTap: city == 'Sem cidade' ? null : () => _openCityQuests(city),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(currentUserProvider);
     if (user != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _load(user.uid));
     }
+
+    final favCities = ref.watch(favoriteCitiesProvider).asData?.value ?? const [];
  
     return SafeArea(
       child: Center(
@@ -191,7 +330,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     Expanded(
                         child: _StatCard(
                       icon: LucideIcons.mapPin,
-                      value: _favCities.length.toString(),
+                      value: favCities.length.toString(),
                       label: 'Cidades Exploradas',
                     )),
                   ],
@@ -203,7 +342,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         fontWeight: FontWeight.bold,
                         color: Theme.of(context).colorScheme.onSurface)),
                 const SizedBox(height: 12),
-                if (_favCities.isEmpty)
+                if (favCities.isEmpty)
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -219,7 +358,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   )
                 else
                   Column(
-                    children: _favCities
+                    children: favCities
                         .map((c) => Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: Container(
@@ -245,6 +384,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         .toList(),
                   ),
                 const SizedBox(height: 32),
+                _buildPhotoGallery(),
                 // ── Meus Roteiros ────────────────────────────────────────
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -351,35 +491,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   },
                 ),
                 const SizedBox(height: 32),
-                Text('Progresso das Missões',
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface)),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('$_questCount missões completadas',
-                          style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Theme.of(context).colorScheme.onSurface)),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Continue explorando para ganhar mais XP!',
-                        style: TextStyle(
-                            fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildCityProgress(),
                 const SizedBox(height: 32),
                 // ── Acessibilidade ───────────────────────────────────────
                 Text(
@@ -528,6 +640,76 @@ class _ItineraryTile extends StatelessWidget {
                   size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CityProgressCard extends StatelessWidget {
+  final String city;
+  final int done;
+  final int total;
+  final VoidCallback? onTap;
+
+  const _CityProgressCard({
+    required this.city,
+    required this.done,
+    required this.total,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pct = total == 0 ? 0.0 : done / total;
+    final cs = Theme.of(context).colorScheme;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        width: 150,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cs.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(LucideIcons.mapPin, size: 14, color: AppColors.coral),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    city,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: cs.onSurface),
+                  ),
+                ),
+                if (onTap != null)
+                  Icon(LucideIcons.chevronRight, size: 14, color: cs.onSurfaceVariant),
+              ],
+            ),
+            const SizedBox(height: 10),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: pct,
+                minHeight: 6,
+                backgroundColor: cs.surface,
+                color: AppColors.coral,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text('$done/$total completas',
+                style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+          ],
         ),
       ),
     );

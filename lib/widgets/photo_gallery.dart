@@ -49,11 +49,17 @@ class _PhotoGalleryDialogState extends State<PhotoGalleryDialog> {
               controller: _controller,
               itemCount: widget.photos.length,
               onPageChanged: (i) => setState(() => _current = i),
-              itemBuilder: (_, i) => InteractiveViewer(
-                child: Center(
-                  child: Image.asset(widget.photos[i], fit: BoxFit.contain),
-                ),
-              ),
+              itemBuilder: (_, i) {
+                final src = widget.photos[i];
+                final isNetwork = src.startsWith('http');
+                return InteractiveViewer(
+                  child: Center(
+                    child: isNetwork
+                        ? Image.network(src, fit: BoxFit.contain)
+                        : Image.asset(src, fit: BoxFit.contain),
+                  ),
+                );
+              },
             ),
             Positioned(
               top: 8,

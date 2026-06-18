@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../models/district_score.dart';
+import '../providers/auth_provider.dart';
 import '../providers/city_provider.dart';
+import '../providers/favorite_provider.dart';
 import '../providers/review_provider.dart';
 import '../services/district_key.dart';
 import '../services/city_dataset_service.dart';
+import '../services/favorite_city_service.dart';
+import '../services/supabase_service.dart';
 import 'district_reviews_page.dart';
 import 'travel_budget_page.dart';
 import '../theme/app_theme.dart';
 import '../widgets/photo_gallery.dart';
 
-const _photos = [
+/// Fotos de exemplo (assets) usadas como fallback quando o bairro ainda não
+/// tem fotos enviadas pela comunidade.
+const _fallbackPhotos = [
   'assets/images/neighborhood-1.jpg',
   'assets/images/neighborhood-2.jpg',
   'assets/images/neighborhood-3.jpg',
@@ -280,7 +287,14 @@ class _MapExplorerPageState extends ConsumerState<MapExplorerPage> {
                               mainAxisAlignment:
                                   MainAxisAlignment.spaceBetween,
                               children: [
-                                _Chip(text: city.name),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    _Chip(text: city.name),
+                                    const SizedBox(width: 8),
+                                    _FavoriteCityButton(cityName: city.name),
+                                  ],
+                                ),
                                 _Chip(
                                   text: '${topThreeDistricts.length} bairros',
                                   background: AppColors.coral,
@@ -526,66 +540,7 @@ class _MapExplorerPageState extends ConsumerState<MapExplorerPage> {
                                   ),
                                 ),
                                 const SizedBox(height: 24),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text('Fotos da Comunidade',
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Theme.of(context).colorScheme.onSurface)),
-                                    TextButton(
-                                      onPressed: () => PhotoGalleryDialog.show(
-                                        context,
-                                        photos: _photos,
-                                      ),
-                                      style: TextButton.styleFrom(
-                                        foregroundColor: AppColors.coral,
-                                        padding: EdgeInsets.zero,
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Text(
-                                            'Ver todas',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                          Icon(LucideIcons.chevronRight,
-                                              size: 14),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  height: 112,
-                                  child: ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: _photos.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(width: 12),
-                                    itemBuilder: (_, i) => GestureDetector(
-                                      onTap: () => PhotoGalleryDialog.show(
-                                        context,
-                                        photos: _photos,
-                                        initialIndex: i,
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(16),
-                                        child: Image.asset(
-                                          _photos[i],
-                                          width: 112,
-                                          height: 112,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
+                                _CommunityGallery(district: displayedDistrict),
                               ],
                             ),
                     ),
@@ -720,6 +675,221 @@ class _PreferencesPanelState extends ConsumerState<_PreferencesPanel> {
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Galeria da comunidade de um bairro: mostra as fotos enviadas pelos usuários
+/// (com fallback para imagens de exemplo) e permite adicionar uma nova foto.
+class _CommunityGallery extends ConsumerStatefulWidget {
+  final DistrictScore district;
+  const _CommunityGallery({required this.district});
+
+  @override
+  ConsumerState<_CommunityGallery> createState() => _CommunityGalleryState();
+}
+
+class _CommunityGalleryState extends ConsumerState<_CommunityGallery> {
+  final _picker = ImagePicker();
+  bool _uploading = false;
+  bool _loading = true;
+  List<String> _urls = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void didUpdateWidget(_CommunityGallery old) {
+    super.didUpdateWidget(old);
+    if (old.district.district != widget.district.district ||
+        old.district.city != widget.district.city) {
+      _load();
+    }
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    final urls = await SupabaseService.listCommunityPhotos(
+        widget.district.city, widget.district.district);
+    if (!mounted) return;
+    setState(() {
+      _urls = urls;
+      _loading = false;
+    });
+  }
+
+  Future<void> _addPhoto() async {
+    final user = ref.read(currentUserProvider);
+    if (user == null) {
+      _toast('Faça login para enviar fotos.', error: true);
+      return;
+    }
+    try {
+      final image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+      if (image == null) return;
+      setState(() => _uploading = true);
+
+      final bytes = await image.readAsBytes();
+      final url = await SupabaseService.uploadCommunityPhoto(
+        bytes: bytes,
+        fileName: image.name,
+        city: widget.district.city,
+        district: widget.district.district,
+        userId: user.uid,
+      );
+      if (url == null) {
+        _toast('Erro ao enviar a foto.', error: true);
+        return;
+      }
+      // Mostra na hora (a listagem do Supabase pode levar um instante).
+      setState(() => _urls = [url, ..._urls]);
+      _toast('Foto adicionada à galeria! 📸');
+    } catch (_) {
+      _toast('Erro ao enviar a foto.', error: true);
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  void _toast(String msg, {bool error = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(msg),
+      backgroundColor: error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasReal = _urls.isNotEmpty;
+    final display = hasReal ? _urls : _fallbackPhotos;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('Fotos da Comunidade',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onSurface)),
+            TextButton.icon(
+              onPressed: _uploading ? null : _addPhoto,
+              icon: _uploading
+                  ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Icon(LucideIcons.plus, size: 14),
+              label: Text(_uploading ? 'Enviando...' : 'Adicionar'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.coral,
+                padding: EdgeInsets.zero,
+              ),
+            ),
+          ],
+        ),
+        if (!hasReal && !_loading)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Seja o primeiro a compartilhar uma foto de ${widget.district.district}.',
+              style: TextStyle(
+                  fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 112,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: display.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 12),
+            itemBuilder: (_, i) {
+              final src = display[i];
+              final isNetwork = src.startsWith('http');
+              return GestureDetector(
+                onTap: () => PhotoGalleryDialog.show(context,
+                    photos: display, initialIndex: i),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: isNetwork
+                      ? Image.network(src,
+                          width: 112, height: 112, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => _brokenThumb())
+                      : Image.asset(src,
+                          width: 112, height: 112, fit: BoxFit.cover),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _brokenThumb() => Container(
+        width: 112,
+        height: 112,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: Icon(LucideIcons.imageOff,
+            color: Theme.of(context).colorScheme.onSurfaceVariant),
+      );
+}
+
+/// Botão de favoritar/desfavoritar a cidade atual. Grava no Firestore.
+class _FavoriteCityButton extends ConsumerWidget {
+  final String cityName;
+  const _FavoriteCityButton({required this.cityName});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(currentUserProvider);
+    final favNames = ref.watch(favoriteCityNamesProvider);
+    final isFav = favNames.contains(cityName.trim().toLowerCase());
+    final cs = Theme.of(context).colorScheme;
+
+    return Material(
+      color: cs.surface.withValues(alpha: 0.95),
+      shape: const CircleBorder(),
+      elevation: 1,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: user == null
+            ? null
+            : () async {
+                await favoriteCityService.toggle(user.uid, cityName, isFav);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text(isFav
+                        ? '$cityName removida dos favoritos'
+                        : '$cityName adicionada aos favoritos ❤️'),
+                    behavior: SnackBarBehavior.floating,
+                  ));
+                }
+              },
+        child: SizedBox(
+          width: 36,
+          height: 36,
+          child: Icon(
+            LucideIcons.heart,
+            size: 18,
+            color: isFav ? AppColors.coral : cs.onSurfaceVariant,
+          ),
+        ),
+      ),
     );
   }
 }

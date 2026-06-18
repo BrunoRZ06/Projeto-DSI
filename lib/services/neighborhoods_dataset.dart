@@ -30,6 +30,41 @@ class Neighborhood {
   );
 }
 
+String _normalizeCity(String s) {
+  const from = 'áàâãäéèêëíìîïóòôõöúùûüç';
+  const to = 'aaaaaeeeeiiiiooooouuuuc';
+  var r = s.toLowerCase().trim();
+  for (var i = 0; i < from.length; i++) {
+    r = r.replaceAll(from[i], to[i]);
+  }
+  const aliases = {
+    'londres': 'london',
+    'roma': 'rome',
+    'lisboa': 'lisbon',
+    'atenas': 'athens',
+    'budapeste': 'budapest',
+    'viena': 'vienna',
+    'berlim': 'berlin',
+    'amsterda': 'amsterdam',
+    'amsterdao': 'amsterdam',
+  };
+  return aliases[r] ?? r;
+}
+
+/// Coordenadas aproximadas (centro) de uma cidade do dataset curado, calculadas
+/// pela média dos bairros. Retorna null se a cidade não estiver no dataset.
+({double lat, double lng})? cityCenterFor(String cityName) {
+  final canonical = _normalizeCity(cityName);
+  final hoods =
+      kNeighborhoods.where((n) => n.cityCanonical == canonical).toList();
+  if (hoods.isEmpty) return null;
+  final lat =
+      hoods.fold<double>(0, (s, n) => s + n.lat) / hoods.length;
+  final lng =
+      hoods.fold<double>(0, (s, n) => s + n.lng) / hoods.length;
+  return (lat: lat, lng: lng);
+}
+
 const List<Neighborhood> kNeighborhoods = [
   // ─── Londres ───────────────────────────────────────────────────────────
   Neighborhood('london', 'Londres', 'Soho', 51.5132, -0.1310, 5, 5, 3),
