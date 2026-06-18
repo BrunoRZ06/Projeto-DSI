@@ -7,16 +7,23 @@ class QuestService {
       FirebaseFirestore.instance.collection('user_quests');
 
   Future<List<UserQuest>> fetchByUser(String userId) async {
-    final snapshot = await _collection
-        .where('user_id', isEqualTo: userId)
-        .orderBy('created_at', descending: true)
-        .get();
+    // Filtra só por user_id (sem orderBy) para não exigir índice composto no
+    // Firestore; a ordenação por data é feita no cliente.
+    final snapshot =
+        await _collection.where('user_id', isEqualTo: userId).get();
 
-    return snapshot.docs.map((doc) {
+    final quests = snapshot.docs.map((doc) {
       final data = Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
       data['id'] = doc.id;
       return UserQuest.fromMap(data);
     }).toList();
+
+    quests.sort((a, b) {
+      final da = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final db = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return db.compareTo(da); // mais recentes primeiro
+    });
+    return quests;
   }
 
   Future<UserQuest> create(UserQuest quest) async {
