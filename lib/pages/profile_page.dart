@@ -4,6 +4,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../models/city_location.dart';
 import '../models/itinerary.dart';
+import '../models/travel_plan.dart';
 import '../models/user_quest.dart';
 import '../providers/auth_provider.dart';
 import '../providers/city_provider.dart';
@@ -15,9 +16,11 @@ import '../providers/user_photos_provider.dart';
 import '../providers/user_quest_provider.dart';
 import '../services/neighborhoods_dataset.dart';
 import '../services/supabase_service.dart';
+import '../services/travel_plan_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/photo_gallery.dart';
+import 'my_travel_plans_page.dart';
  
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -31,6 +34,11 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   bool _editing = false;
   bool _saving = false;
   bool _loaded = false;
+
+  final _travelPlanService = TravelPlanService();
+  List<TravelPlan> _travelPlans = [];
+  bool _travelPlansLoading = false;
+  String? _travelPlansError;
  
   int _totalXp = 0;
  
@@ -64,7 +72,41 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     } catch (e) {
       debugPrint('ProfilePage _load error: $e');
     }
+
+    await _loadTravelPlans();
   }
+
+  Future<void> _loadTravelPlans() async {
+    setState(() {
+      _travelPlansLoading = true;
+      _travelPlansError = null;
+    });
+
+    try {
+      final plans = await _travelPlanService.getUserPlans();
+      if (!mounted) return;
+      setState(() {
+        _travelPlans = plans;
+        _travelPlansLoading = false;
+      });
+    } catch (e) {
+      debugPrint('ProfilePage _loadTravelPlans error: $e');
+      if (!mounted) return;
+      setState(() {
+        _travelPlansError = e.toString();
+        _travelPlansLoading = false;
+      });
+    }
+  }
+
+  Future<void> _openAllTravelPlans() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const MyTravelPlansPage()),
+    );
+    if (mounted) _loadTravelPlans();
+  }
+
+  String _formatCurrency(double value) => 'R\$ ${value.toStringAsFixed(0)}';
  
   Future<void> _save(String userId) async {
     setState(() => _saving = true);
@@ -544,6 +586,94 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   },
                 ),
                 const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Meus Planejamentos',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onSurface),
+                    ),
+                    GestureDetector(
+                      onTap: _openAllTravelPlans,
+                      child: Text(
+                        'Ver todos',
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.coral,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                if (_travelPlansLoading)
+                  Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 16),
+                      child: CircularProgressIndicator(
+                          color: AppColors.coral, strokeWidth: 2),
+                    ),
+                  )
+                else if (_travelPlansError != null)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      'Erro ao carregar planejamentos.',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                  )
+                else if (_travelPlans.isEmpty)
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Text(
+                      'Nenhum planejamento salvo ainda. Planeje gastos pelo mapa!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                  )
+                else
+                  Column(
+                    children: [
+                      ..._travelPlans.take(3).map(
+                            (plan) => _TravelPlanTile(
+                              city: plan.city,
+                              district: plan.district,
+                              estimatedTotal: _formatCurrency(plan.estimatedTotal),
+                              onTap: _openAllTravelPlans,
+                            ),
+                          ),
+                      if (_travelPlans.length > 3)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: GestureDetector(
+                            onTap: _openAllTravelPlans,
+                            child: Text(
+                              '+ ${_travelPlans.length - 3} planejamento(s) a mais',
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.coral,
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                const SizedBox(height: 32),
                 _buildCityProgress(),
                 const SizedBox(height: 32),
                 // ── Acessibilidade ───────────────────────────────────────
@@ -634,6 +764,88 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   }
 }
  
+class _TravelPlanTile extends StatelessWidget {
+  final String city;
+  final String district;
+  final String estimatedTotal;
+  final VoidCallback onTap;
+
+  const _TravelPlanTile({
+    required this.city,
+    required this.district,
+    required this.estimatedTotal,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.coralLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(LucideIcons.wallet, size: 18, color: AppColors.coral),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      city,
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).colorScheme.onSurface),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      district,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Text(
+                estimatedTotal,
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.coral),
+              ),
+              const SizedBox(width: 4),
+              Icon(LucideIcons.chevronRight,
+                  size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _ItineraryTile extends StatelessWidget {
   final Itinerary itinerary;
   final VoidCallback onTap;
