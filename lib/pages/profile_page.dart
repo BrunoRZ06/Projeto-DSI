@@ -20,6 +20,7 @@ import '../services/travel_plan_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_text_field.dart';
 import '../widgets/photo_gallery.dart';
+import 'match_history_page.dart';
 import 'my_travel_plans_page.dart';
  
 class ProfilePage extends ConsumerStatefulWidget {
@@ -31,9 +32,11 @@ class ProfilePage extends ConsumerStatefulWidget {
  
 class _ProfilePageState extends ConsumerState<ProfilePage> {
   final _nameController = TextEditingController();
+  final _favoriteSearchController = TextEditingController();
   bool _editing = false;
   bool _saving = false;
   bool _loaded = false;
+  String _favoriteSearchQuery = '';
 
   final _travelPlanService = TravelPlanService();
   List<TravelPlan> _travelPlans = [];
@@ -45,6 +48,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   @override
   void dispose() {
     _nameController.dispose();
+    _favoriteSearchController.dispose();
     super.dispose();
   }
  
@@ -104,6 +108,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
       MaterialPageRoute(builder: (_) => const MyTravelPlansPage()),
     );
     if (mounted) _loadTravelPlans();
+  }
+
+  Future<void> _openMatchHistory() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const MatchHistoryPage()),
+    );
   }
 
   String _formatCurrency(double value) => 'R\$ ${value.toStringAsFixed(0)}';
@@ -327,6 +337,12 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     }
 
     final favCities = ref.watch(favoriteCitiesProvider).asData?.value ?? const [];
+    final favoriteQuery = _favoriteSearchQuery.trim().toLowerCase();
+    final visibleFavCities = favoriteQuery.isEmpty
+        ? favCities
+        : favCities
+            .where((city) => city.cityName.toLowerCase().contains(favoriteQuery))
+            .toList();
  
     return SafeArea(
       child: Center(
@@ -453,30 +469,68 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                   )
                 else
                   Column(
-                    children: favCities
-                        .map((c) => Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(LucideIcons.mapPin,
-                                        size: 16, color: AppColors.coral),
-                                    const SizedBox(width: 12),
-                                    Text(c.cityName,
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.w500,
-                                            color: Theme.of(context).colorScheme.onSurface)),
-                                  ],
-                                ),
-                              ),
-                            ))
-                        .toList(),
+                    children: [
+                      TextField(
+                        controller: _favoriteSearchController,
+                        onChanged: (value) =>
+                            setState(() => _favoriteSearchQuery = value),
+                        decoration: const InputDecoration(
+                          hintText: 'Filtrar cidade favorita',
+                          prefixIcon: Icon(LucideIcons.search, size: 18),
+                          isDense: true,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      if (visibleFavCities.isEmpty)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Text(
+                            'Nenhuma cidade encontrada para este filtro.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color:
+                                  Theme.of(context).colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                      else
+                        ...visibleFavCities
+                            .map((c) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(LucideIcons.mapPin,
+                                            size: 16, color: AppColors.coral),
+                                        const SizedBox(width: 12),
+                                        Text(c.cityName,
+                                            style: TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                                color: Theme.of(context)
+                                                    .colorScheme
+                                                    .onSurface)),
+                                      ],
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                    ],
                   ),
                 const SizedBox(height: 32),
                 _buildPhotoGallery(),
@@ -584,6 +638,21 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                       },
                     );
                   },
+                ),
+                const SizedBox(height: 32),
+                Text(
+                  'Histórico de Matches',
+                  style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSurface),
+                ),
+                const SizedBox(height: 12),
+                _ProfileActionTile(
+                  icon: LucideIcons.sparkles,
+                  title: 'Ver matches recentes',
+                  subtitle: 'Reabra cidades e bairros recomendados pelo quiz',
+                  onTap: _openMatchHistory,
                 ),
                 const SizedBox(height: 32),
                 Row(
@@ -905,6 +974,78 @@ class _ItineraryTile extends StatelessWidget {
                   size: 16, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileActionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _ProfileActionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: cs.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.coralLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 18, color: AppColors.coral),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: cs.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Icon(LucideIcons.chevronRight, size: 16, color: cs.onSurfaceVariant),
+          ],
         ),
       ),
     );

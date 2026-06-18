@@ -8,6 +8,13 @@ import '../services/travel_plan_service.dart';
 import '../theme/app_theme.dart';
 import 'travel_budget_page.dart';
 
+enum _TravelPlanSortOption {
+  newest,
+  oldest,
+  highestTotal,
+  lowestTotal,
+}
+
 class MyTravelPlansPage extends StatefulWidget {
   const MyTravelPlansPage({super.key});
 
@@ -17,12 +24,21 @@ class MyTravelPlansPage extends StatefulWidget {
 
 class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
   final _travelPlanService = TravelPlanService();
+  final _searchController = TextEditingController();
 
   List<TravelPlan>? _plans;
   bool _loading = true;
   bool _openingPlan = false;
   bool _deletingPlan = false;
   String? _error;
+  String _searchQuery = '';
+  _TravelPlanSortOption _sortOption = _TravelPlanSortOption.newest;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -180,6 +196,28 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
 
   String _formatCurrency(double value) => 'R\$ ${value.toStringAsFixed(0)}';
 
+  List<TravelPlan> _applyFilters(List<TravelPlan> plans) {
+    final query = _searchQuery.trim().toLowerCase();
+    final filtered = plans.where((plan) {
+      if (query.isEmpty) return true;
+      return plan.city.toLowerCase().contains(query) ||
+          plan.district.toLowerCase().contains(query);
+    }).toList();
+
+    switch (_sortOption) {
+      case _TravelPlanSortOption.newest:
+        filtered.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      case _TravelPlanSortOption.oldest:
+        filtered.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+      case _TravelPlanSortOption.highestTotal:
+        filtered.sort((a, b) => b.estimatedTotal.compareTo(a.estimatedTotal));
+      case _TravelPlanSortOption.lowestTotal:
+        filtered.sort((a, b) => a.estimatedTotal.compareTo(b.estimatedTotal));
+    }
+
+    return filtered;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -295,12 +333,40 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
       );
     }
 
+    final visiblePlans = _applyFilters(plans);
+
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-      itemCount: plans.length,
+      itemCount: visiblePlans.length + 1,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (_, index) {
-        final plan = plans[index];
+        if (index == 0) {
+          return Column(
+            children: [
+              _TravelPlanFilters(
+                controller: _searchController,
+                sortOption: _sortOption,
+                onSearchChanged: (value) =>
+                    setState(() => _searchQuery = value),
+                onSortChanged: (value) {
+                  if (value == null) return;
+                  setState(() => _sortOption = value);
+                },
+              ),
+              if (visiblePlans.isEmpty) ...[
+                const SizedBox(height: 32),
+                _FilteredEmptyState(
+                  onClear: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                ),
+              ],
+            ],
+          );
+        }
+
+        final plan = visiblePlans[index - 1];
         return _TravelPlanListTile(
           plan: plan,
           estimatedTotal: _formatCurrency(plan.estimatedTotal),
@@ -309,6 +375,98 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
           onDelete: _deletingPlan ? null : () => _deletePlan(plan),
         );
       },
+    );
+  }
+}
+
+class _TravelPlanFilters extends StatelessWidget {
+  final TextEditingController controller;
+  final _TravelPlanSortOption sortOption;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<_TravelPlanSortOption?> onSortChanged;
+
+  const _TravelPlanFilters({
+    required this.controller,
+    required this.sortOption,
+    required this.onSearchChanged,
+    required this.onSortChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        TextField(
+          controller: controller,
+          onChanged: onSearchChanged,
+          decoration: const InputDecoration(
+            hintText: 'Buscar por cidade ou bairro',
+            prefixIcon: Icon(LucideIcons.search, size: 18),
+            isDense: true,
+          ),
+        ),
+        const SizedBox(height: 10),
+        DropdownButtonFormField<_TravelPlanSortOption>(
+          initialValue: sortOption,
+          onChanged: onSortChanged,
+          decoration: const InputDecoration(
+            labelText: 'Ordenar por',
+            isDense: true,
+          ),
+          items: const [
+            DropdownMenuItem(
+              value: _TravelPlanSortOption.newest,
+              child: Text('Mais recentes'),
+            ),
+            DropdownMenuItem(
+              value: _TravelPlanSortOption.oldest,
+              child: Text('Mais antigos'),
+            ),
+            DropdownMenuItem(
+              value: _TravelPlanSortOption.highestTotal,
+              child: Text('Maior custo'),
+            ),
+            DropdownMenuItem(
+              value: _TravelPlanSortOption.lowestTotal,
+              child: Text('Menor custo'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _FilteredEmptyState extends StatelessWidget {
+  final VoidCallback onClear;
+
+  const _FilteredEmptyState({required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Icon(
+          LucideIcons.search,
+          size: 36,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Nenhum planejamento encontrado',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton(
+          onPressed: onClear,
+          child: const Text('Limpar filtro'),
+        ),
+      ],
     );
   }
 }
