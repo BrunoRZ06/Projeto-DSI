@@ -91,7 +91,8 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
   Future<void> _openEditCityQuest(CityQuest quest) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => CityQuestFormPage(existing: quest, cityName: quest.cityName),
+        builder: (_) =>
+            CityQuestFormPage(existing: quest, cityName: quest.cityName),
       ),
     );
   }
@@ -99,7 +100,8 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
   Future<void> _deleteCityQuest(CityQuest quest) async {
     final confirmed = await _confirmDelete(quest.title);
     if (confirmed != true) return;
-    final ok = await ref.read(cityQuestsControllerProvider.notifier).remove(quest.id);
+    final ok =
+        await ref.read(cityQuestsControllerProvider.notifier).remove(quest.id);
     if (ok) {
       if (quest.photoUrl != null && quest.photoUrl!.isNotEmpty) {
         await SupabaseService.deleteQuestPhoto(quest.photoUrl!);
@@ -131,7 +133,8 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: FilledButton.styleFrom(backgroundColor: AppColors.destructive),
+            style:
+                FilledButton.styleFrom(backgroundColor: AppColors.destructive),
             child: Text('Excluir'),
           ),
         ],
@@ -149,7 +152,9 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
+        backgroundColor: error
+            ? AppColors.destructive
+            : Theme.of(context).colorScheme.inverseSurface,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -245,13 +250,18 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                             fontWeight: FontWeight.w600)),
                     const SizedBox(height: 12),
                     Text('Missões Locais',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w800,
-                            color: Theme.of(context).colorScheme.onSurface)),
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium
+                            ?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color:
+                                    Theme.of(context).colorScheme.onSurface)),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(LucideIcons.mapPin, size: 14, color: AppColors.coral),
+                        Icon(LucideIcons.mapPin,
+                            size: 14, color: AppColors.coral),
                         const SizedBox(width: 4),
                         Text(
                           currentCity,
@@ -264,7 +274,8 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                       ],
                     ),
                     const SizedBox(height: 24),
-                    _XpSummary(totalXp: totalXp, done: doneCount, total: totalCount),
+                    _XpSummary(
+                        totalXp: totalXp, done: doneCount, total: totalCount),
                     const SizedBox(height: 28),
 
                     // ─── Missões da cidade ──────────────────────────────────
@@ -276,14 +287,16 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                               style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
-                                  color: Theme.of(context).colorScheme.onSurface)),
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface)),
                         ),
                         if (currentUser != null)
                           TextButton.icon(
                             onPressed: () => _openCreateCityQuest(currentCity),
                             icon: Icon(LucideIcons.plus, size: 14),
                             label: Text('Nova'),
-                            style: TextButton.styleFrom(foregroundColor: AppColors.coral),
+                            style: TextButton.styleFrom(
+                                foregroundColor: AppColors.coral),
                           ),
                       ],
                     ),
@@ -300,7 +313,8 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                         ),
                       ),
                       error: (_, __) => const _EmptyInfo(
-                          message: 'Não foi possível carregar as missões da cidade.'),
+                          message:
+                              'Não foi possível carregar as missões da cidade.'),
                       data: (quests) {
                         if (quests.isEmpty) {
                           return _CityEmptyState(
@@ -316,7 +330,8 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                               _CityQuestCard(
                                 quest: quests[i],
                                 isDone: completed.contains(quests[i].id),
-                                isExpanded: _expandedId == 'city-${quests[i].id}',
+                                isExpanded:
+                                    _expandedId == 'city-${quests[i].id}',
                                 canEdit: currentUser != null,
                                 onToggle: () => setState(() => _expandedId =
                                     _expandedId == 'city-${quests[i].id}'
@@ -327,7 +342,8 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                                 onEdit: () => _openEditCityQuest(quests[i]),
                                 onDelete: () => _deleteCityQuest(quests[i]),
                               ),
-                              if (i < quests.length - 1) const SizedBox(height: 12),
+                              if (i < quests.length - 1)
+                                const SizedBox(height: 12),
                             ],
                           ],
                         );
@@ -343,20 +359,23 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                             style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: Theme.of(context).colorScheme.onSurface)),
+                                color:
+                                    Theme.of(context).colorScheme.onSurface)),
                         if (currentUser != null)
                           TextButton.icon(
                             onPressed: _openCreateQuest,
                             icon: Icon(LucideIcons.plus, size: 14),
                             label: Text('Nova quest'),
-                            style: TextButton.styleFrom(foregroundColor: AppColors.coral),
+                            style: TextButton.styleFrom(
+                                foregroundColor: AppColors.coral),
                           ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     if (currentUser == null)
                       const _EmptyInfo(
-                        message: 'Faça login para criar e gerenciar quests personalizadas.',
+                        message:
+                            'Faça login para criar e gerenciar quests personalizadas.',
                       )
                     else
                       userQuestsAsync.when(
@@ -374,7 +393,8 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                         data: (_) {
                           if (userQuests.isEmpty) {
                             return const _EmptyInfo(
-                              message: 'Você ainda não tem quests nesta cidade. Crie uma!',
+                              message:
+                                  'Você ainda não tem quests nesta cidade. Crie uma!',
                             );
                           }
                           final visibleQuests = _applySearchAndSort(userQuests);
@@ -393,23 +413,32 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                               const SizedBox(height: 12),
                               if (visibleQuests.isEmpty)
                                 const _EmptyInfo(
-                                  message: 'Nenhuma quest encontrada para este filtro.',
+                                  message:
+                                      'Nenhuma quest encontrada para este filtro.',
                                 ),
-                              for (var i = 0; i < visibleQuests.length; i++) ...[
+                              for (var i = 0;
+                                  i < visibleQuests.length;
+                                  i++) ...[
                                 _UserQuestCard(
                                   quest: visibleQuests[i],
-                                  isDone: completed.contains(visibleQuests[i].id),
-                                  isExpanded: _expandedId == 'user-${visibleQuests[i].id}',
+                                  isDone:
+                                      completed.contains(visibleQuests[i].id),
+                                  isExpanded: _expandedId ==
+                                      'user-${visibleQuests[i].id}',
                                   onToggle: () => setState(() => _expandedId =
-                                      _expandedId == 'user-${visibleQuests[i].id}'
+                                      _expandedId ==
+                                              'user-${visibleQuests[i].id}'
                                           ? null
                                           : 'user-${visibleQuests[i].id}'),
-                                  onComplete: () =>
-                                      _completeQuest(visibleQuests[i].id, visibleQuests[i].xp),
-                                  onEdit: () => _openEditQuest(visibleQuests[i]),
-                                  onDelete: () => _deleteQuest(visibleQuests[i]),
+                                  onComplete: () => _completeQuest(
+                                      visibleQuests[i].id, visibleQuests[i].xp),
+                                  onEdit: () =>
+                                      _openEditQuest(visibleQuests[i]),
+                                  onDelete: () =>
+                                      _deleteQuest(visibleQuests[i]),
                                 ),
-                                if (i < visibleQuests.length - 1) const SizedBox(height: 12),
+                                if (i < visibleQuests.length - 1)
+                                  const SizedBox(height: 12),
                               ],
                             ],
                           );
@@ -506,7 +535,8 @@ class _XpSummary extends StatelessWidget {
   final int done;
   final int total;
 
-  const _XpSummary({required this.totalXp, required this.done, required this.total});
+  const _XpSummary(
+      {required this.totalXp, required this.done, required this.total});
 
   @override
   Widget build(BuildContext context) {
@@ -529,18 +559,22 @@ class _XpSummary extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onSurface)),
                 Text('$done/$total missões completas',
                     style: TextStyle(
-                        fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                        fontSize: 12,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
               ],
             ),
           ),
           Container(
             width: 48,
             height: 48,
-            decoration: BoxDecoration(color: AppColors.coral, shape: BoxShape.circle),
+            decoration:
+                BoxDecoration(color: AppColors.coral, shape: BoxShape.circle),
             child: Center(
               child: Text('$done',
                   style: TextStyle(
-                      color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold)),
             ),
           ),
         ],
@@ -581,12 +615,13 @@ class _CityQuestCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          border:
+              Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: Column(
           children: [
             InkWell(
-              onTap: onToggle,
+              onTap: onEdit,
               borderRadius: BorderRadius.circular(18),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -617,9 +652,12 @@ class _CityQuestCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              decoration: isDone ? TextDecoration.lineThrough : null,
+                              decoration:
+                                  isDone ? TextDecoration.lineThrough : null,
                               color: isDone
-                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
                                   : Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
@@ -628,7 +666,9 @@ class _CityQuestCard extends StatelessWidget {
                             Text(quest.subtitle,
                                 style: TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant)),
                           ],
                         ],
                       ),
@@ -636,10 +676,18 @@ class _CityQuestCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     _XpBadge(xp: quest.xp),
                     const SizedBox(width: 6),
-                    Icon(
-                      isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    IconButton(
+                      icon: Icon(
+                        isExpanded
+                            ? LucideIcons.chevronUp
+                            : LucideIcons.chevronDown,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: onToggle,
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                      splashRadius: 16,
                     ),
                   ],
                 ),
@@ -660,12 +708,15 @@ class _CityQuestCard extends StatelessWidget {
                           style: TextStyle(
                               fontSize: 13,
                               height: 1.45,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant)),
                     if (quest.locationHint != null) ...[
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(LucideIcons.mapPin, size: 14, color: AppColors.coral),
+                          Icon(LucideIcons.mapPin,
+                              size: 14, color: AppColors.coral),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(quest.locationHint!,
@@ -688,7 +739,8 @@ class _CityQuestCard extends StatelessWidget {
                     else
                       Row(
                         children: [
-                          Icon(LucideIcons.check, size: 16, color: AppColors.success),
+                          Icon(LucideIcons.check,
+                              size: 16, color: AppColors.success),
                           SizedBox(width: 8),
                           Text('Missão completada!',
                               style: TextStyle(
@@ -738,12 +790,13 @@ class _UserQuestCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+          border:
+              Border.all(color: Theme.of(context).colorScheme.outlineVariant),
         ),
         child: Column(
           children: [
             InkWell(
-              onTap: onToggle,
+              onTap: onEdit,
               borderRadius: BorderRadius.circular(18),
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -755,7 +808,9 @@ class _UserQuestCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: isDone
                             ? AppColors.success.withValues(alpha: 0.15)
-                            : Theme.of(context).colorScheme.surfaceContainerHighest,
+                            : Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Icon(
@@ -774,9 +829,12 @@ class _UserQuestCard extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              decoration: isDone ? TextDecoration.lineThrough : null,
+                              decoration:
+                                  isDone ? TextDecoration.lineThrough : null,
                               color: isDone
-                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant
                                   : Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
@@ -785,7 +843,9 @@ class _UserQuestCard extends StatelessWidget {
                             Text(quest.subtitle,
                                 style: TextStyle(
                                     fontSize: 12,
-                                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant)),
                           ],
                         ],
                       ),
@@ -793,10 +853,18 @@ class _UserQuestCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     _XpBadge(xp: quest.xp),
                     const SizedBox(width: 6),
-                    Icon(
-                      isExpanded ? LucideIcons.chevronUp : LucideIcons.chevronDown,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    IconButton(
+                      icon: Icon(
+                        isExpanded
+                            ? LucideIcons.chevronUp
+                            : LucideIcons.chevronDown,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      onPressed: onToggle,
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                      splashRadius: 16,
                     ),
                   ],
                 ),
@@ -817,7 +885,9 @@ class _UserQuestCard extends StatelessWidget {
                           style: TextStyle(
                               fontSize: 13,
                               height: 1.45,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant)),
                       const SizedBox(height: 12),
                     ],
                     if (!isDone)
@@ -830,7 +900,8 @@ class _UserQuestCard extends StatelessWidget {
                     else
                       Row(
                         children: [
-                          Icon(LucideIcons.check, size: 16, color: AppColors.success),
+                          Icon(LucideIcons.check,
+                              size: 16, color: AppColors.success),
                           SizedBox(width: 8),
                           Text('Missão completada!',
                               style: TextStyle(
@@ -865,7 +936,9 @@ class _XpBadge extends StatelessWidget {
       ),
       child: Text('+$xp XP',
           style: TextStyle(
-              fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.coralDark)),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: AppColors.coralDark)),
     );
   }
 }
@@ -924,7 +997,8 @@ class _QuestPhoto extends StatelessWidget {
             child: Center(
               child: CircularProgressIndicator(
                 value: progress.expectedTotalBytes != null
-                    ? progress.cumulativeBytesLoaded / progress.expectedTotalBytes!
+                    ? progress.cumulativeBytesLoaded /
+                        progress.expectedTotalBytes!
                     : null,
               ),
             ),
@@ -938,7 +1012,8 @@ class _QuestPhoto extends StatelessWidget {
           ),
           child: Center(
             child: Icon(LucideIcons.imageOff,
-                size: 32, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                size: 32,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
       ),
@@ -974,7 +1049,8 @@ class _CityEmptyState extends StatelessWidget {
         children: [
           Text('Ainda não há missões para $city.',
               style: TextStyle(
-                  fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
           if (canEdit) ...[
             const SizedBox(height: 12),
             Row(
@@ -1018,7 +1094,8 @@ class _EmptyInfo extends StatelessWidget {
       ),
       child: Text(message,
           style: TextStyle(
-              fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              fontSize: 13,
+              color: Theme.of(context).colorScheme.onSurfaceVariant)),
     );
   }
 }

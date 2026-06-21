@@ -371,7 +371,7 @@ class _MyTravelPlansPageState extends State<MyTravelPlansPage> {
           plan: plan,
           estimatedTotal: _formatCurrency(plan.estimatedTotal),
           createdAt: _formatDate(plan.createdAt),
-          onEdit: _openingPlan || _deletingPlan ? null : () => _openPlan(plan),
+          onTap: _openingPlan || _deletingPlan ? null : () => _openPlan(plan),
           onDelete: _deletingPlan ? null : () => _deletePlan(plan),
         );
       },
@@ -475,107 +475,106 @@ class _TravelPlanListTile extends StatelessWidget {
   final TravelPlan plan;
   final String estimatedTotal;
   final String createdAt;
-  final VoidCallback? onEdit;
+  final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
   const _TravelPlanListTile({
     required this.plan,
     required this.estimatedTotal,
     required this.createdAt,
-    this.onEdit,
+    this.onTap,
     this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.coralLight,
-              borderRadius: BorderRadius.circular(10),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(14),
+          border:
+              Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: AppColors.coralLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(LucideIcons.wallet,
+                  size: 18, color: AppColors.coral),
             ),
-            child: const Icon(LucideIcons.wallet,
-                size: 18, color: AppColors.coral),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  plan.city,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.onSurface,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    plan.city,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  plan.district,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 2),
+                  Text(
+                    plan.district,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Criado em $createdAt',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 4),
+                  Text(
+                    'Criado em $createdAt',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              estimatedTotal,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.coral,
+              ),
+            ),
+            const SizedBox(width: 4),
+            PopupMenuButton<String>(
+              icon: Icon(LucideIcons.moreVertical,
+                  size: 16,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
+              onSelected: (value) {
+                if (value == 'delete' && onDelete != null) {
+                  onDelete!();
+                }
+              },
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('Excluir'),
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            estimatedTotal,
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.coral,
-            ),
-          ),
-          const SizedBox(width: 4),
-          PopupMenuButton<String>(
-            icon: Icon(LucideIcons.moreVertical,
-                size: 16,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-            onSelected: (value) {
-              if (value == 'edit' && onEdit != null) {
-                onEdit!();
-              } else if (value == 'delete' && onDelete != null) {
-                onDelete!();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'edit',
-                child: Text('Editar'),
-              ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Text('Excluir'),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
