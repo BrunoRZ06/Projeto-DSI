@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_flutter/lucide_flutter.dart';
@@ -22,6 +24,7 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
   final _destination = TextEditingController();
   final _values = <double>[3, 3, 4];
   bool _loading = false;
+  Timer? _debounceTimer;
 
   static const _sliders = <(String, String, String)>[
     ('Orçamento', 'Mochileiro', 'Luxo'),
@@ -31,6 +34,7 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _destination.dispose();
     super.dispose();
   }
@@ -39,13 +43,46 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg),
-      backgroundColor: error ? AppColors.destructive : Theme.of(context).colorScheme.inverseSurface,
+      backgroundColor: error
+          ? AppColors.destructive
+          : Theme.of(context).colorScheme.inverseSurface,
       behavior: SnackBarBehavior.floating,
     ));
   }
 
   double _toPercent(double value) {
     return ((value - 1) / 4) * 100;
+  }
+
+  void _onSearchChanged(String value) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _searchCity(value);
+    });
+  }
+
+  Future<void> _searchCity(String cityName) async {
+    if (cityName.trim().isEmpty) return;
+
+    try {
+      final rankedDistricts = await cityDatasetService.rankDistrictsForCity(
+        cityName.trim(),
+        preferences: RankingPreferences.balanced,
+      );
+
+      if (rankedDistricts.isNotEmpty && mounted) {
+        final bestDistrict = rankedDistricts.first;
+        ref.read(cityProvider.notifier).setCity(
+              CityLocation(
+                name: bestDistrict.city,
+                lat: bestDistrict.latitude,
+                lng: bestDistrict.longitude,
+              ),
+            );
+      }
+    } catch (e) {
+      debugPrint('Erro ao buscar cidade: $e');
+    }
   }
 
   Future<void> _find() async {
@@ -113,7 +150,8 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
               children: [
                 Row(
                   children: [
-                    Icon(LucideIcons.sparkles, size: 16, color: AppColors.coral),
+                    Icon(LucideIcons.sparkles,
+                        size: 16, color: AppColors.coral),
                     SizedBox(width: 6),
                     Text('BAIRROMATCH',
                         style: TextStyle(
@@ -136,7 +174,9 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
                 const SizedBox(height: 8),
                 Text(
                   'Nos conte o que importa e vamos encontrar o bairro perfeito pra você.',
-                  style: TextStyle(fontSize: 15, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                  style: TextStyle(
+                      fontSize: 15,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 32),
                 Text('Cidade de Destino',
@@ -150,6 +190,7 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
                   hint: 'Londres, Paris, Tóquio, São Paulo...',
                   icon: LucideIcons.mapPin,
                   onSubmitted: _find,
+                  onChanged: _onSearchChanged,
                 ),
                 const SizedBox(height: 32),
                 for (var i = 0; i < _sliders.length; i++) ...[
@@ -194,7 +235,8 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
                     color: Theme.of(context).colorScheme.onSurface)),
             Text(_values[i].toStringAsFixed(0),
                 style: TextStyle(
-                    fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
         const SizedBox(height: 8),
@@ -210,10 +252,12 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
           children: [
             Text(left,
                 style: TextStyle(
-                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
             Text(right,
                 style: TextStyle(
-                    fontSize: 11, color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    fontSize: 11,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant)),
           ],
         ),
       ],
