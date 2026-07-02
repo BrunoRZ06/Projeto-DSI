@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Paleta do BairroMatch — modo claro (azul suave + Plus Jakarta Sans).
+/// Paleta do BairroMatch — modo claro (azul de alto contraste + Plus Jakarta Sans).
+/// A cor de marca usa um azul acessível com texto branco (contraste ~5:1, WCAG AA).
 class AppColors {
-  static const primary = Color(0xFF90CAF9);
-  static const primaryLight = Color(0xFFC6E2FA);
-  static const primaryDark = Color(0xFF64B5F6);
+  static const primary = Color(0xFF2563EB);
+  static const primaryLight = Color(0xFFDBEAFE);
+  static const primaryDark = Color(0xFF1D4ED8);
 
   static const coral = primary;
   static const coralLight = primaryLight;
@@ -27,9 +28,10 @@ class AppColors {
 /// Hierarquia de superfícies em cinza neutro (sem tint azul):
 ///   background (#121212) → surface/cards (#1E1E1E) → input (#2C2C2E)
 class AppColorsDark {
-  static const primary = Color(0xFF90CAF9);
-  static const primaryLight = Color(0xFF1E3A5F);
-  static const primaryDark = Color(0xFF64B5F6);
+  // Azul um pouco mais claro (blue-500) para destacar sobre superfícies escuras.
+  static const primary = Color(0xFF3B82F6);
+  static const primaryLight = Color(0xFF13233D);
+  static const primaryDark = Color(0xFF2563EB);
 
   static const coral = primary;
   static const coralLight = primaryLight;

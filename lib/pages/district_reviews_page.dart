@@ -25,7 +25,7 @@ class DistrictReviewsPage extends ConsumerWidget {
 
   Future<void> _showEditDialog(BuildContext context, WidgetRef ref, {DistrictReview? existing}) async {
     final isEditing = existing != null;
-    final ratingController = ValueNotifier<double>(existing?.rating ?? 5.0);
+    final ratingController = ValueNotifier<double>(existing?.rating ?? 0.0);
     final textController = TextEditingController(text: existing?.text ?? '');
 
     await showDialog(
@@ -36,27 +36,31 @@ class DistrictReviewsPage extends ConsumerWidget {
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Icon(LucideIcons.star, color: Colors.amber),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: ValueListenableBuilder<double>(
-                      valueListenable: ratingController,
-                      builder: (_, value, __) {
-                        return Slider(
-                          min: 1.0,
-                          max: 5.0,
-                          divisions: 4,
-                          value: value,
-                          label: value.toStringAsFixed(1),
-                          onChanged: (v) => ratingController.value = v,
-                        );
-                      },
-                    ),
-                  ),
-                ],
+              ValueListenableBuilder<double>(
+                valueListenable: ratingController,
+                builder: (_, value, __) {
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(5, (index) {
+                      final starValue = index + 1;
+                      final filled = value >= starValue;
+                      return IconButton(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        constraints: const BoxConstraints(),
+                        splashRadius: 22,
+                        tooltip: '$starValue',
+                        onPressed: () => ratingController.value = starValue.toDouble(),
+                        icon: Icon(
+                          filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                          color: Colors.amber,
+                          size: 36,
+                        ),
+                      );
+                    }),
+                  );
+                },
               ),
+              const SizedBox(height: 8),
               TextField(
                 controller: textController,
                 maxLines: 4,
@@ -70,6 +74,12 @@ class DistrictReviewsPage extends ConsumerWidget {
               onPressed: () async {
                 final rating = ratingController.value;
                 final text = textController.text.trim();
+                if (rating < 1) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Selecione ao menos 1 estrela.')),
+                  );
+                  return;
+                }
                 final controller = ref.read(reviewControllerProvider);
                 try {
                   if (isEditing) {
@@ -162,27 +172,52 @@ class DistrictReviewsPage extends ConsumerWidget {
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
                     itemBuilder: (_, i) {
                       final review = reviews[i];
-                      return ReviewTile(
+                      final isOwn = userReviewAsync.value?.id == review.id;
+                      Future<void> confirmAndDelete() async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: Text('Confirmar exclusão'),
+                            content: Text('Deseja excluir sua avaliação?'),
+                            actions: [
+                              TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text('Cancelar')),
+                              ElevatedButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text('Excluir')),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true) {
+                          await ref.read(reviewControllerProvider).deleteReview(review.id);
+                        }
+                      }
+
+                      final tile = ReviewTile(
                         review: review,
                         onEdit: () async {
                           await _showEditDialog(context, ref, existing: review);
                         },
-                        onDelete: () async {
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: Text('Confirmar exclusão'),
-                              content: Text('Deseja excluir sua avaliação?'),
-                              actions: [
-                                TextButton(onPressed: () => Navigator.of(ctx).pop(false), child: Text('Cancelar')),
-                                ElevatedButton(onPressed: () => Navigator.of(ctx).pop(true), child: Text('Excluir')),
-                              ],
-                            ),
-                          );
-                          if (confirmed == true) {
-                            await ref.read(reviewControllerProvider).deleteReview(review.id);
-                          }
+                        onDelete: confirmAndDelete,
+                      );
+
+                      // Só permite arrastar para apagar a própria avaliação.
+                      if (!isOwn) return tile;
+
+                      return Dismissible(
+                        key: ValueKey('review-${review.id}'),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.only(right: 24),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: const Icon(LucideIcons.trash2, color: Colors.white),
+                        ),
+                        confirmDismiss: (_) async {
+                          await confirmAndDelete();
+                          return false;
                         },
+                        child: tile,
                       );
                     },
                   );

@@ -142,6 +142,34 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
     );
   }
 
+  /// Envolve um item em um [Dismissible] para permitir apagar arrastando.
+  /// A remoção real é feita por [onConfirmed]; como as listas são reativas,
+  /// retornamos `false` para o próprio provider atualizar a lista.
+  Widget _swipeToDelete({
+    required Key key,
+    required Future<void> Function() onConfirmed,
+    required Widget child,
+  }) {
+    return Dismissible(
+      key: key,
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        decoration: BoxDecoration(
+          color: AppColors.destructive,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: const Icon(LucideIcons.trash2, color: Colors.white),
+      ),
+      confirmDismiss: (_) async {
+        await onConfirmed();
+        return false;
+      },
+      child: child,
+    );
+  }
+
   void _completeQuest(String id, int xp) {
     ref.read(completeQuestProvider(id));
     _toast('+$xp XP ganhos! 🎉');
@@ -327,20 +355,23 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                         return Column(
                           children: [
                             for (var i = 0; i < quests.length; i++) ...[
-                              _CityQuestCard(
-                                quest: quests[i],
-                                isDone: completed.contains(quests[i].id),
-                                isExpanded:
-                                    _expandedId == 'city-${quests[i].id}',
-                                canEdit: currentUser != null,
-                                onToggle: () => setState(() => _expandedId =
-                                    _expandedId == 'city-${quests[i].id}'
-                                        ? null
-                                        : 'city-${quests[i].id}'),
-                                onComplete: () =>
-                                    _completeQuest(quests[i].id, quests[i].xp),
-                                onEdit: () => _openEditCityQuest(quests[i]),
-                                onDelete: () => _deleteCityQuest(quests[i]),
+                              _swipeToDelete(
+                                key: ValueKey('city-${quests[i].id}'),
+                                onConfirmed: () => _deleteCityQuest(quests[i]),
+                                child: _CityQuestCard(
+                                  quest: quests[i],
+                                  isDone: completed.contains(quests[i].id),
+                                  isExpanded: _expandedId == 'city-${quests[i].id}',
+                                  canEdit: currentUser != null,
+                                  onToggle: () => setState(() => _expandedId =
+                                      _expandedId == 'city-${quests[i].id}'
+                                          ? null
+                                          : 'city-${quests[i].id}'),
+                                  onComplete: () =>
+                                      _completeQuest(quests[i].id, quests[i].xp),
+                                  onEdit: () => _openEditCityQuest(quests[i]),
+                                  onDelete: () => _deleteCityQuest(quests[i]),
+                                ),
                               ),
                               if (i < quests.length - 1)
                                 const SizedBox(height: 12),
@@ -416,26 +447,23 @@ class _QuestsPageState extends ConsumerState<QuestsPage> {
                                   message:
                                       'Nenhuma quest encontrada para este filtro.',
                                 ),
-                              for (var i = 0;
-                                  i < visibleQuests.length;
-                                  i++) ...[
-                                _UserQuestCard(
-                                  quest: visibleQuests[i],
-                                  isDone:
-                                      completed.contains(visibleQuests[i].id),
-                                  isExpanded: _expandedId ==
-                                      'user-${visibleQuests[i].id}',
-                                  onToggle: () => setState(() => _expandedId =
-                                      _expandedId ==
-                                              'user-${visibleQuests[i].id}'
-                                          ? null
-                                          : 'user-${visibleQuests[i].id}'),
-                                  onComplete: () => _completeQuest(
-                                      visibleQuests[i].id, visibleQuests[i].xp),
-                                  onEdit: () =>
-                                      _openEditQuest(visibleQuests[i]),
-                                  onDelete: () =>
-                                      _deleteQuest(visibleQuests[i]),
+                              for (var i = 0; i < visibleQuests.length; i++) ...[
+                                _swipeToDelete(
+                                  key: ValueKey('user-${visibleQuests[i].id}'),
+                                  onConfirmed: () => _deleteQuest(visibleQuests[i]),
+                                  child: _UserQuestCard(
+                                    quest: visibleQuests[i],
+                                    isDone: completed.contains(visibleQuests[i].id),
+                                    isExpanded: _expandedId == 'user-${visibleQuests[i].id}',
+                                    onToggle: () => setState(() => _expandedId =
+                                        _expandedId == 'user-${visibleQuests[i].id}'
+                                            ? null
+                                            : 'user-${visibleQuests[i].id}'),
+                                    onComplete: () =>
+                                        _completeQuest(visibleQuests[i].id, visibleQuests[i].xp),
+                                    onEdit: () => _openEditQuest(visibleQuests[i]),
+                                    onDelete: () => _deleteQuest(visibleQuests[i]),
+                                  ),
                                 ),
                                 if (i < visibleQuests.length - 1)
                                   const SizedBox(height: 12),

@@ -200,11 +200,28 @@ class _ItinerariesContentState extends ConsumerState<_ItinerariesContent> {
                   padding: const EdgeInsets.fromLTRB(24, 12, 24, 120),
                   itemCount: items.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) => _ItineraryCard(
-                    itinerary: items[i],
-                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => ItineraryFormPage(existing: items[i]))),
-                    onDelete: () => _delete(context, items[i]),
+                  itemBuilder: (context, i) => Dismissible(
+                    key: ValueKey('itinerary-${items[i].id}'),
+                    direction: DismissDirection.endToStart,
+                    background: Container(
+                      alignment: Alignment.centerRight,
+                      padding: const EdgeInsets.only(right: 24),
+                      decoration: BoxDecoration(
+                        color: AppColors.destructive,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(LucideIcons.trash2, color: Colors.white),
+                    ),
+                    confirmDismiss: (_) async {
+                      await _delete(context, items[i]);
+                      return false;
+                    },
+                    child: _ItineraryCard(
+                      itinerary: items[i],
+                      onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                          builder: (_) => ItineraryFormPage(existing: items[i]))),
+                      onDelete: () => _delete(context, items[i]),
+                    ),
                   ),
                 ),
         ),

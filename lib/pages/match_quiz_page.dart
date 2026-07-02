@@ -24,7 +24,8 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
   final _destination = TextEditingController();
   final _values = <double>[3, 3, 4];
   bool _loading = false;
-  Timer? _debounceTimer;
+  Timer? _debounce;
+  String _lastSearched = '';
 
   static const _sliders = <(String, String, String)>[
     ('Orçamento', 'Mochileiro', 'Luxo'),
@@ -33,10 +34,31 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _destination.addListener(_onDestinationChanged);
+  }
+
+  @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _debounce?.cancel();
+    _destination.removeListener(_onDestinationChanged);
     _destination.dispose();
     super.dispose();
+  }
+
+  /// Dispara a busca automaticamente enquanto o usuário digita (com debounce),
+  /// para já carregar a cidade na área sem precisar clicar em "Match".
+  void _onDestinationChanged() {
+    _debounce?.cancel();
+    final query = _destination.text.trim();
+    if (query.length < 3 || query == _lastSearched) return;
+    _debounce = Timer(const Duration(milliseconds: 650), () {
+      if (!mounted || _loading) return;
+      if (_destination.text.trim() == query) {
+        _find(silent: true);
+      }
+    });
   }
 
   void _toast(String msg, {bool error = false}) {
@@ -54,43 +76,13 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
     return ((value - 1) / 4) * 100;
   }
 
-  void _onSearchChanged(String value) {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      _searchCity(value);
-    });
-  }
-
-  Future<void> _searchCity(String cityName) async {
-    if (cityName.trim().isEmpty) return;
-
-    try {
-      final rankedDistricts = await cityDatasetService.rankDistrictsForCity(
-        cityName.trim(),
-        preferences: RankingPreferences.balanced,
-      );
-
-      if (rankedDistricts.isNotEmpty && mounted) {
-        final bestDistrict = rankedDistricts.first;
-        ref.read(cityProvider.notifier).setCity(
-              CityLocation(
-                name: bestDistrict.city,
-                lat: bestDistrict.latitude,
-                lng: bestDistrict.longitude,
-              ),
-            );
-      }
-    } catch (e) {
-      debugPrint('Erro ao buscar cidade: $e');
-    }
-  }
-
-  Future<void> _find() async {
+  Future<void> _find({bool silent = false}) async {
     final city = _destination.text.trim();
     if (city.isEmpty) {
-      _toast('Por favor, insira uma cidade de destino', error: true);
+      if (!silent) _toast('Por favor, insira uma cidade de destino', error: true);
       return;
     }
+    _lastSearched = city;
     setState(() => _loading = true);
     try {
       final preferences = RankingPreferences(
@@ -106,7 +98,7 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
         preferences: preferences,
       );
       if (rankedDistricts.isEmpty) {
-        _toast('Erro ao carregar', error: true);
+        if (!silent) _toast('Cidade não encontrada. Verifique o nome digitado.', error: true);
         return;
       }
 
@@ -131,7 +123,7 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
           'Melhor distrito encontrado: ${bestDistrict.district} (${bestDistrict.city})');
       widget.onCityFound(location);
     } catch (_) {
-      _toast('Erro ao carregar', error: true);
+      if (!silent) _toast('Erro ao carregar', error: true);
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -190,7 +182,6 @@ class _MatchQuizPageState extends ConsumerState<MatchQuizPage> {
                   hint: 'Londres, Paris, Tóquio, São Paulo...',
                   icon: LucideIcons.mapPin,
                   onSubmitted: _find,
-                  onChanged: _onSearchChanged,
                 ),
                 const SizedBox(height: 32),
                 for (var i = 0; i < _sliders.length; i++) ...[
