@@ -9,14 +9,13 @@ import '../models/district_score.dart';
 import '../providers/auth_provider.dart';
 import '../providers/city_provider.dart';
 import '../providers/favorite_provider.dart';
-import '../providers/review_provider.dart';
 import '../services/district_key.dart';
 import '../services/city_dataset_service.dart';
 import '../services/favorite_city_service.dart';
 import '../services/supabase_service.dart';
-import 'district_reviews_page.dart';
 import 'travel_budget_page.dart';
 import '../theme/app_theme.dart';
+import '../widgets/district_reviews_section.dart';
 import '../widgets/photo_gallery.dart';
 
 /// Fotos de exemplo (assets) usadas como fallback quando o bairro ainda não
@@ -468,44 +467,12 @@ class _MapExplorerPageState extends ConsumerState<MapExplorerPage> {
                                 const SizedBox(height: 6),
                                 Builder(builder: (context) {
                                     final districtKey = generateDistrictKey(displayedDistrict);
-                                    final stats = ref.watch(reviewStatsProvider(districtKey));
-                                    return Row(
-                                      children: [
-                                        Icon(LucideIcons.star, size: 14, color: AppColors.warning),
-                                        const SizedBox(width: 6),
-                                        stats.when(
-                                          data: (s) {
-                                            final avg = (s['average'] as double?) ?? 0.0;
-                                            final count = (s['count'] as int?) ?? 0;
-                                            return Text('${avg.toStringAsFixed(1)} · $count avaliações',
-                                                style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant));
-                                          },
-                                          loading: () => Text('Carregando avaliações...', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                                          error: (_, __) => Text('Sem avaliações', style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant)),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        TextButton(
-                                          onPressed: () {
-                                            Navigator.of(context).push(MaterialPageRoute(
-                                              builder: (_) => DistrictReviewsPage(
-                                                districtKey: districtKey,
-                                                city: displayedDistrict.city,
-                                                district: displayedDistrict.district,
-                                                latitude: displayedDistrict.latitude,
-                                                longitude: displayedDistrict.longitude,
-                                              ),
-                                            ));
-                                          },
-                                          style: TextButton.styleFrom(foregroundColor: AppColors.coral, padding: EdgeInsets.zero),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            children: [
-                                              Text('Avaliações', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                                              Icon(LucideIcons.chevronRight, size: 14),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                    return DistrictReviewsSection(
+                                      districtKey: districtKey,
+                                      city: displayedDistrict.city,
+                                      district: displayedDistrict.district,
+                                      latitude: displayedDistrict.latitude,
+                                      longitude: displayedDistrict.longitude,
                                     );
                                   }),
                                 const SizedBox(height: 20),
