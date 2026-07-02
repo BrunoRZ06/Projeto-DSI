@@ -4,6 +4,7 @@ import 'package:lucide_flutter/lucide_flutter.dart';
 
 import '../models/district_review.dart';
 import '../providers/auth_provider.dart';
+import '../theme/app_theme.dart';
 
 class ReviewTile extends ConsumerWidget {
   final DistrictReview review;
@@ -18,10 +19,20 @@ class ReviewTile extends ConsumerWidget {
     return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
   }
 
+  /// Cor da bolinha da nota conforme a avaliação (1–5):
+  /// ruim → vermelho, média → amarelo, boa → azul, excelente → verde.
+  Color _ratingColor(double rating) {
+    if (rating < 2.5) return AppColors.destructive;
+    if (rating < 3.5) return AppColors.warning;
+    if (rating < 4.5) return AppColors.primary;
+    return AppColors.success;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final current = ref.watch(currentUserProvider);
     final isOwner = current != null && current.uid == review.userId;
+    final ratingColor = _ratingColor(review.rating);
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -34,10 +45,13 @@ class ReviewTile extends ConsumerWidget {
         children: [
           CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.grey.shade200,
+            backgroundColor: ratingColor,
             child: Text(
               review.rating.toStringAsFixed(1),
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
             ),
           ),
           const SizedBox(width: 12),
