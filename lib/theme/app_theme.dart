@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
-/// Paleta do BairroMatch — modo claro (coral + Plus Jakarta Sans).
+/// Paleta do BairroMatch — modo claro (azul suave + Plus Jakarta Sans).
 class AppColors {
-  static const coral = Color(0xFFE87A6F);
-  static const coralLight = Color(0xFFFADDD9);
-  static const coralDark = Color(0xFFD4503F);
+  static const primary = Color(0xFF90CAF9);
+  static const primaryLight = Color(0xFFC6E2FA);
+  static const primaryDark = Color(0xFF64B5F6);
+
+  static const coral = primary;
+  static const coralLight = primaryLight;
+  static const coralDark = primaryDark;
 
   static const background = Color(0xFFFFFFFF);
   static const foreground = Color(0xFF151A22);
@@ -23,9 +27,13 @@ class AppColors {
 /// Hierarquia de superfícies em cinza neutro (sem tint azul):
 ///   background (#121212) → surface/cards (#1E1E1E) → input (#2C2C2E)
 class AppColorsDark {
-  static const coral = Color(0xFFE87A6F);
-  static const coralLight = Color(0xFF3D1E1A);
-  static const coralDark = Color(0xFFD4503F);
+  static const primary = Color(0xFF90CAF9);
+  static const primaryLight = Color(0xFF1E3A5F);
+  static const primaryDark = Color(0xFF64B5F6);
+
+  static const coral = primary;
+  static const coralLight = primaryLight;
+  static const coralDark = primaryDark;
 
   // Superfícies — profundidade crescente
   static const background = Color(0xFF121212);     // scaffold, tela de fundo
@@ -58,9 +66,9 @@ class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: AppColors.background,
       colorScheme: const ColorScheme.light(
-        primary: AppColors.coral,
+        primary: AppColors.primary,
         onPrimary: Colors.white,
-        secondary: AppColors.coral,
+        secondary: AppColors.primary,
         onSecondary: Colors.white,
         surface: AppColors.background,
         onSurface: AppColors.foreground,
@@ -87,14 +95,14 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.coral, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: TextStyle(color: AppColors.mutedForeground.withValues(alpha: 0.7)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.coral,
+          backgroundColor: AppColors.primary,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(56),
           textStyle: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -119,11 +127,11 @@ class AppTheme {
           side: const BorderSide(color: AppColors.border),
         ),
       ),
-      sliderTheme: const SliderThemeData(
-        activeTrackColor: AppColors.coral,
+      sliderTheme: SliderThemeData(
+        activeTrackColor: AppColors.primary,
         inactiveTrackColor: AppColors.secondary,
-        thumbColor: AppColors.coral,
-        overlayColor: Color(0x33E87A6F),
+        thumbColor: AppColors.primary,
+        overlayColor: AppColors.primary.withValues(alpha: 0.2),
       ),
     );
   }
@@ -138,9 +146,9 @@ class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: AppColorsDark.background,
       colorScheme: const ColorScheme.dark(
-        primary: AppColorsDark.coral,
+        primary: AppColorsDark.primary,
         onPrimary: Colors.white,
-        secondary: AppColorsDark.coral,
+        secondary: AppColorsDark.primary,
         onSecondary: Colors.white,
         surface: AppColorsDark.surface,
         onSurface: AppColorsDark.foreground,
@@ -168,14 +176,14 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColorsDark.coral, width: 1.5),
+          borderSide: const BorderSide(color: AppColorsDark.primary, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         hintStyle: TextStyle(color: AppColorsDark.mutedForeground.withValues(alpha: 0.8)),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColorsDark.coral,
+          backgroundColor: AppColorsDark.primary,
           foregroundColor: Colors.white,
           minimumSize: const Size.fromHeight(56),
           textStyle: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
@@ -201,10 +209,10 @@ class AppTheme {
         ),
       ),
       sliderTheme: SliderThemeData(
-        activeTrackColor: AppColorsDark.coral,
+        activeTrackColor: AppColorsDark.primary,
         inactiveTrackColor: AppColorsDark.input,
-        thumbColor: AppColorsDark.coral,
-        overlayColor: const Color(0x33E87A6F),
+        thumbColor: AppColorsDark.primary,
+        overlayColor: AppColorsDark.primary.withValues(alpha: 0.2),
       ),
     );
   }

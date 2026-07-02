@@ -310,27 +310,16 @@ class _ItineraryCard extends StatelessWidget {
                                 color:
                                     Theme.of(context).colorScheme.onSurface)),
                       ),
-                      PopupMenuButton<String>(
-                        icon: Icon(LucideIcons.ellipsisVertical,
-                            size: 18,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant),
-                        onSelected: (v) {
-                          if (v == 'delete') onDelete();
-                        },
-                        itemBuilder: (_) => [
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(children: [
-                              Icon(LucideIcons.trash2,
-                                  size: 16, color: AppColors.destructive),
-                              SizedBox(width: 10),
-                              Text('Excluir',
-                                  style:
-                                      TextStyle(color: AppColors.destructive)),
-                            ]),
-                          ),
-                        ],
+                      IconButton(
+                        tooltip: 'Excluir roteiro',
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                        onPressed: onDelete,
+                        icon: Icon(
+                          Icons.delete_outline,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                       ),
                     ],
                   ),

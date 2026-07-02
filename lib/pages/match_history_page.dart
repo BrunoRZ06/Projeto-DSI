@@ -378,19 +378,35 @@ class _MatchHistoryTile extends StatelessWidget {
               ),
             ),
           ),
-          PopupMenuButton<String>(
-            icon: Icon(
-              LucideIcons.moreVertical,
-              size: 16,
-              color: cs.onSurfaceVariant,
-            ),
-            onSelected: (value) {
-              if (value == 'open') onOpen();
-              if (value == 'delete' && onDelete != null) onDelete!();
-            },
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'open', child: Text('Abrir no mapa')),
-              PopupMenuItem(value: 'delete', child: Text('Excluir')),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              PopupMenuButton<String>(
+                padding: EdgeInsets.zero,
+                icon: Icon(
+                  LucideIcons.moreVertical,
+                  size: 16,
+                  color: cs.onSurfaceVariant,
+                ),
+                onSelected: (value) {
+                  if (value == 'open') onOpen();
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(value: 'open', child: Text('Abrir no mapa')),
+                ],
+              ),
+              if (onDelete != null)
+                IconButton(
+                  tooltip: 'Excluir histórico',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                  onPressed: onDelete,
+                  icon: Icon(
+                    Icons.delete_outline,
+                    size: 18,
+                    color: cs.error,
+                  ),
+                ),
             ],
           ),
         ],
