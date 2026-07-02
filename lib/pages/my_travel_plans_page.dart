@@ -557,22 +557,18 @@ class _TravelPlanListTile extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 4),
-            PopupMenuButton<String>(
-              icon: Icon(LucideIcons.moreVertical,
-                  size: 16,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant),
-              onSelected: (value) {
-                if (value == 'delete' && onDelete != null) {
-                  onDelete!();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('Excluir'),
+            if (onDelete != null)
+              IconButton(
+                tooltip: 'Excluir planejamento',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                onPressed: onDelete,
+                icon: Icon(
+                  Icons.delete_outline,
+                  size: 18,
+                  color: Theme.of(context).colorScheme.error,
                 ),
-              ],
-            ),
+              ),
           ],
         ),
       ),
